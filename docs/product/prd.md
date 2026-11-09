@@ -1,7 +1,7 @@
 # PRD-001 — Product Catalog API
 
 **Projeto:** Java AI Engineering Lab  
-**Versão do documento:** 0.1  
+**Versão do documento:** 0.2  
 **Status:** Proposto — aguardando validação  
 **Responsável pela aprovação:** Responsável técnico do projeto
 
@@ -43,7 +43,7 @@ O sistema deverá permitir:
 | `description` | String ou null | Opcional, máximo de 500 caracteres |
 | `price` | Decimal | Obrigatório, maior que zero e com até 2 casas decimais |
 | `createdAt` | Timestamp | Gerado na criação, imutável |
-| `updatedAt` | Timestamp | Gerado na criação e atualizado nas alterações |
+| `updatedAt` | Timestamp | Gerado na criação e alterado somente quando os dados do produto mudarem |
 
 ### 4.1 Regras do SKU
 
@@ -59,8 +59,10 @@ O sistema deverá permitir:
 
 - O nome deve ser validado após remoção de espaços externos.
 - Nomes vazios ou com apenas espaços são inválidos.
-- A descrição poderá ser omitida ou informada como `null`.
-- Uma descrição informada e não nula não poderá conter apenas espaços.
+- A descrição poderá ser omitida ou informada como `null`; nesses casos, será armazenada como `null`.
+- Remover espaços no início e no final da descrição antes de validá-la e persisti-la.
+- Descrições vazias (`""`) ou compostas exclusivamente por espaços deverão ser normalizadas para `null`, sem provocar erro de validação.
+- Após a normalização, uma descrição não nula deverá ter no máximo 500 caracteres.
 
 ### 4.3 Regras do preço
 
@@ -76,7 +78,8 @@ O sistema deverá permitir:
 - Utilizar timestamps em UTC.
 - Representar datas na API em formato ISO 8601.
 - `createdAt` não poderá mudar após a criação.
-- `updatedAt` deverá refletir alterações bem-sucedidas.
+- `updatedAt` deverá refletir alterações que efetivamente modifiquem os dados persistidos.
+- Requisições `PUT` que não alterem os valores normalizados dos campos editáveis deverão preservar `updatedAt`.
 
 ## 5. Contrato HTTP
 
@@ -149,6 +152,14 @@ Um produto inexistente deverá retornar `404 Not Found`.
 
 Uma tentativa de utilizar SKU pertencente a outro produto deverá retornar `409 Conflict`.
 
+### 5.4.1 Repetição de atualização sem mudanças
+
+Uma requisição `PUT` que informe exatamente os mesmos valores de negócio já persistidos, após aplicar as regras de normalização, deverá retornar `200 OK`, sem alterar o estado do recurso.
+
+Nessa situação, `id`, `createdAt` e `updatedAt` deverão permanecer inalterados.
+
+Se houver alteração efetiva em qualquer campo editável, `updatedAt` deverá ser atualizado.
+
 ### 5.5 Exclusão
 
 A exclusão será física nesta versão.
@@ -169,6 +180,14 @@ Campos aceitos no corpo JSON:
 - `price`: número JSON decimal.
 
 Campos gerenciados pelo servidor não deverão ser aceitos como campos editáveis.
+
+### 6.1.1 Rejeição de campos desconhecidos
+
+Requisições de criação e atualização deverão aceitar exclusivamente os campos documentados em 6.1.
+
+Qualquer propriedade JSON adicional ou desconhecida, inclusive `id`, `createdAt` ou `updatedAt`, deverá resultar em `400 Bad Request`, com código `VALIDATION_FAILED`.
+
+A aplicação não deverá ignorar silenciosamente essas propriedades.
 
 ### 6.2 Resposta de produto
 
@@ -278,6 +297,28 @@ para uma resposta HTTP consistente.
 **E** a outra deverá retornar `409 Conflict`  
 **E** somente um registro deverá existir no banco.
 
+### CA-09 — Repetição de `PUT` sem alterações
+
+**Dado** um produto existente com determinados valores persistidos  
+**Quando** uma requisição `PUT` repetir os mesmos valores de negócio após normalização  
+**Então** a API deverá retornar `200 OK`  
+**E** `id`, `createdAt` e `updatedAt` deverão permanecer inalterados.
+
+### CA-10 — Campo JSON desconhecido
+
+**Dada** uma requisição de criação ou atualização contendo `id` ou outro campo não previsto no contrato  
+**Quando** a requisição for processada  
+**Então** a API deverá retornar `400 Bad Request`  
+**E** o código do erro deverá ser `VALIDATION_FAILED`  
+**E** nenhum dado deverá ser criado ou alterado.
+
+### CA-11 — Normalização da descrição
+
+**Dada** uma requisição válida com `description` vazia ou formada exclusivamente por espaços  
+**Quando** o produto for criado ou atualizado  
+**Então** a operação deverá ser aceita, desde que os demais campos sejam válidos  
+**E** a descrição armazenada e retornada deverá ser `null`.
+
 ## 9. Requisitos não funcionais
 
 ### Arquitetura
@@ -368,3 +409,5 @@ dos requisitos, cenários e ambiguidades.
 
 Mudanças posteriores deverão gerar uma nova versão
 do PRD e ser consideradas no protocolo experimental.
+
+```
