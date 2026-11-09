@@ -314,6 +314,7 @@ O `scope` é opcional.
 - Mantenha commits pequenos e relacionados a um objetivo.
 - Não misture mudanças independentes no mesmo commit.
 - Utilize scope quando ajudar a identificar a área afetada.
+- Não inclua trailers `Co-Authored-By` nem outras atribuições de coautoria nas mensagens de commit, incluindo atribuições a agentes, modelos ou ferramentas de IA.
 
 ### Exemplos válidos
 
@@ -342,6 +343,7 @@ Antes do commit:
 - Execute `git diff --check` e, para arquivos preparados, `git diff --cached --check`.
 - Confirme que os arquivos pertencem à mesma mudança.
 - Confirme conformidade com Conventional Commits.
+- Confirme que a mensagem não contém atribuições de coautoria.
 
 Não afirme que existe validação automática de commits antes de configurar e verificar um hook Git ou mecanismo equivalente.
 

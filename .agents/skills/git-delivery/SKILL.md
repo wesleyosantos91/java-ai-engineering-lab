@@ -27,7 +27,7 @@ As regras de branches e commits estão no [AGENTS.md, seção 9](../../../AGENTS
 - Formato `<type>(<scope>): <description>`, em inglês, no imperativo, sem ponto final.
 - Tipos permitidos: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `build`, `ci`, `chore`, `style` e `revert`.
 - Breaking change: `!` após o tipo ou scope, com justificativa no corpo.
-- Inclua as linhas de atribuição exigidas pelo cliente de IA em uso, quando houver.
+- Siga a proibição de coautoria definida no [AGENTS.md, seção 9](../../../AGENTS.md).
 
 ## Pull request
 
