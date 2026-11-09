@@ -12,7 +12,8 @@ AI-First não significa autonomia irrestrita, ausência de revisão humana ou su
 
 - Java 27.
 - Spring Boot 4.1.2.
-- Maven Wrapper 3.10.0.
+- Apache Maven 3.10.0.
+- Maven Wrapper 3.3.4.
 - Spring Web MVC.
 - Spring JDBC com SQL explícito.
 - PostgreSQL e Flyway.
@@ -143,8 +144,6 @@ docs(architecture): define package conventions
 test(product): cover concurrent product creation
 build(maven): configure jacoco and pit
 ```
-
-O scope é opcional.
 
 ### Tipos permitidos
 
