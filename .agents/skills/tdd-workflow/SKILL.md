@@ -15,9 +15,9 @@ Garantir que cada comportamento nasça de um teste que falha pelo motivo certo. 
 
 ## Convenções atuais
 
-- Testes unitários: sufixo `*Test.java`, executados por `bash scripts/test-unit.sh`.
-- Testes de integração: sufixo `*IT.java` com Testcontainers, executados por `bash scripts/test-integration.sh`.
-- `JavaAiEngineeringLabApplicationTests` pertence ao fluxo de integração.
+- Testes unitários: sufixo exato `*Test.java`, executados pelo Surefire via `bash scripts/test-unit.sh`. Não carregam contexto Spring nem iniciam Testcontainers.
+- Testes de integração: sufixo exato `*IT.java` com Testcontainers, executados pelo Failsafe via `bash scripts/test-integration.sh`.
+- Os sufixos `*Tests`, `Test*` e `*ITCase` não são executados. Detalhes no [guia de testes](../../../docs/how-to/run-tests.md).
 - Nomeie testes pelo comportamento, por exemplo `shouldRejectDuplicateSku`, e use `@DisplayName` com o cenário BDD quando ajudar na rastreabilidade.
 
 ## Ciclo
