@@ -30,6 +30,14 @@
 		<java.version>27</java.version>
 		<skipUnitTests>false</skipUnitTests>
 		<argLine/>
+		<!-- Quality gates: versões explícitas, não gerenciadas pelo parent Spring Boot. -->
+		<jacoco.version>0.8.16</jacoco.version>
+		<archunit.version>1.5.1</archunit.version>
+		<pitest.version>1.30.1</pitest.version>
+		<pitest-junit5-plugin.version>1.2.3</pitest-junit5-plugin.version>
+		<!-- Preenchidas pelo prepare-agent do JaCoCo; vazias quando o JaCoCo não executa. -->
+		<jacocoUnitArgLine/>
+		<jacocoItArgLine/>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -102,6 +110,18 @@
 			<artifactId>testcontainers-postgresql</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>com.tngtech.archunit</groupId>
+			<artifactId>archunit</artifactId>
+			<version>${archunit.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- Exigido como provided pelo pitest-junit5-plugin; versão gerenciada pelo BOM do Spring Boot. -->
+		<dependency>
+			<groupId>org.junit.platform</groupId>
+			<artifactId>junit-platform-launcher</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -120,11 +140,31 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
-					<includes><include>**/*Test.java</include></includes>
 					<skipTests>${skipUnitTests}</skipTests>
 					<failIfNoTests>true</failIfNoTests>
-					<argLine>@{argLine} -javaagent:"${org.mockito:mockito-core:jar}"</argLine>
+					<argLine>@{argLine} @{jacocoUnitArgLine} -javaagent:"${org.mockito:mockito-core:jar}"</argLine>
 				</configuration>
+				<executions>
+					<execution>
+						<id>default-test</id>
+						<configuration>
+							<includes><include>**/*Test.java</include></includes>
+							<excludes><exclude>**/*ArchitectureTest.java</exclude></excludes>
+						</configuration>
+					</execution>
+					<!-- ArchUnit: somente por execução explícita (surefire:test@architecture), relatórios próprios e sem agent JaCoCo. -->
+					<execution>
+						<id>architecture</id>
+						<phase>none</phase>
+						<goals><goal>test</goal></goals>
+						<configuration>
+							<includes><include>**/*ArchitectureTest.java</include></includes>
+							<skipTests>false</skipTests>
+							<reportsDirectory>${project.build.directory}/architecture-reports</reportsDirectory>
+							<argLine>@{argLine}</argLine>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -132,7 +172,7 @@
 				<configuration>
 					<includes><include>**/*IT.java</include></includes>
 					<failIfNoTests>true</failIfNoTests>
-					<argLine>@{argLine} -javaagent:"${org.mockito:mockito-core:jar}"</argLine>
+					<argLine>@{argLine} @{jacocoItArgLine} -javaagent:"${org.mockito:mockito-core:jar}"</argLine>
 				</configuration>
 				<executions>
 					<execution>
@@ -142,6 +182,128 @@
 						</goals>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>${jacoco.version}</version>
+				<executions>
+					<execution>
+						<id>prepare-unit-agent</id>
+						<goals><goal>prepare-agent</goal></goals>
+						<configuration>
+							<propertyName>jacocoUnitArgLine</propertyName>
+							<destFile>${project.build.directory}/jacoco-unit.exec</destFile>
+							<append>false</append>
+						</configuration>
+					</execution>
+					<execution>
+						<id>prepare-integration-agent</id>
+						<goals><goal>prepare-agent-integration</goal></goals>
+						<configuration>
+							<propertyName>jacocoItArgLine</propertyName>
+							<destFile>${project.build.directory}/jacoco-it.exec</destFile>
+							<append>false</append>
+						</configuration>
+					</execution>
+					<!-- Merge, relatório e check: somente por execução explícita (scripts/test-coverage.sh). -->
+					<execution>
+						<id>coverage-merge</id>
+						<phase>none</phase>
+						<goals><goal>merge</goal></goals>
+						<configuration>
+							<fileSets>
+								<fileSet>
+									<directory>${project.build.directory}</directory>
+									<includes>
+										<include>jacoco-unit.exec</include>
+										<include>jacoco-it.exec</include>
+									</includes>
+								</fileSet>
+							</fileSets>
+							<destFile>${project.build.directory}/jacoco-merged.exec</destFile>
+						</configuration>
+					</execution>
+					<execution>
+						<id>coverage-report</id>
+						<phase>none</phase>
+						<goals><goal>report</goal></goals>
+						<configuration>
+							<dataFile>${project.build.directory}/jacoco-merged.exec</dataFile>
+							<outputDirectory>${project.build.directory}/site/jacoco</outputDirectory>
+							<formats><format>XML</format><format>HTML</format></formats>
+							<!-- Bootstrap Spring Boot sem regra de negócio. Manter em sincronia com coverage-check e scripts/test-coverage.sh. -->
+							<excludes>
+								<exclude>io/github/wesleyosantos91/catalog/JavaAiEngineeringLabApplication.class</exclude>
+							</excludes>
+						</configuration>
+					</execution>
+					<execution>
+						<id>coverage-check</id>
+						<phase>none</phase>
+						<goals><goal>check</goal></goals>
+						<configuration>
+							<dataFile>${project.build.directory}/jacoco-merged.exec</dataFile>
+							<haltOnFailure>true</haltOnFailure>
+							<excludes>
+								<exclude>io/github/wesleyosantos91/catalog/JavaAiEngineeringLabApplication.class</exclude>
+							</excludes>
+							<rules>
+								<rule>
+									<element>BUNDLE</element>
+									<limits>
+										<limit>
+											<counter>LINE</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.90</minimum>
+										</limit>
+										<limit>
+											<counter>BRANCH</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.90</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- PIT: somente por execução explícita (scripts/test-mutation.sh). -->
+			<plugin>
+				<groupId>org.pitest</groupId>
+				<artifactId>pitest-maven</artifactId>
+				<version>${pitest.version}</version>
+				<dependencies>
+					<dependency>
+						<groupId>org.pitest</groupId>
+						<artifactId>pitest-junit5-plugin</artifactId>
+						<version>${pitest-junit5-plugin.version}</version>
+					</dependency>
+				</dependencies>
+				<configuration>
+					<!-- Código de negócio elegível: domain e service das features. Manter em sincronia com scripts/test-mutation.sh. -->
+					<targetClasses>
+						<param>io.github.wesleyosantos91.catalog.feature.*.domain.*</param>
+						<param>io.github.wesleyosantos91.catalog.feature.*.service.*</param>
+					</targetClasses>
+					<targetTests>
+						<param>io.github.wesleyosantos91.catalog.*Test</param>
+					</targetTests>
+					<excludedTestClasses>
+						<param>io.github.wesleyosantos91.catalog.*ArchitectureTest</param>
+					</excludedTestClasses>
+					<mutationThreshold>90</mutationThreshold>
+					<failWhenNoMutations>false</failWhenNoMutations>
+					<timestampedReports>false</timestampedReports>
+					<outputFormats>
+						<param>XML</param>
+						<param>HTML</param>
+					</outputFormats>
+					<jvmArgs>
+						<jvmArg>-javaagent:${org.mockito:mockito-core:jar}</jvmArg>
+					</jvmArgs>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>

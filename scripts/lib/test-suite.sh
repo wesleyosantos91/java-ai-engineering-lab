@@ -15,8 +15,11 @@ run_test_suite() {
     find "${report_dir}" -maxdepth 1 -type f \( -name 'TEST-*.xml' -o -name 'failsafe-summary.xml' \) -delete
   fi
 
+  # TEST_SUITE_EXCLUDE (opcional): padrão de nome removido da elegibilidade, como os testes ArchUnit
+  # excluídos da execução default do Surefire.
   if [[ ! -d "${ROOT_DIR}/src/test/java" ]] ||
-     ! find "${ROOT_DIR}/src/test/java" -type f -name "${pattern}" -print -quit | grep -q .; then
+     ! find "${ROOT_DIR}/src/test/java" -type f -name "${pattern}" \
+       ! -name "${TEST_SUITE_EXCLUDE:-}" -print -quit | grep -q .; then
     echo "[SKIP] ${suite}: não existem classes ${pattern}."
     return 3
   fi

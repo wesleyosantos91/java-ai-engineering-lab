@@ -22,9 +22,24 @@ cat > "${FIXTURE}/mvnw" <<'BASH'
 echo "mvn $*" >> "${FIXTURE_TRACE}"
 if [[ "$*" == *'clean compile'* ]]; then exit "${MOCK_BUILD_EXIT:-0}"; fi
 if [[ "${MOCK_MAVEN_EXIT:-0}" != 0 ]]; then exit "${MOCK_MAVEN_EXIT}"; fi
+if [[ "$*" == *jacoco:check@coverage-check* ]]; then
+  mkdir -p target/site/jacoco
+  branch='<counter type="BRANCH" missed="0" covered="4"/>'
+  [[ "${MOCK_COVERAGE:-pass}" != nobranch ]] || branch=''
+  echo "<report><counter type=\"LINE\" missed=\"0\" covered=\"10\"/>${branch}</report>" > target/site/jacoco/jacoco.xml
+  exit "${MOCK_COVERAGE_EXIT:-0}"
+fi
+if [[ "$*" == *mutationCoverage* ]]; then
+  mkdir -p target/pit-reports
+  mutants="<mutation detected='true' status='KILLED'></mutation>"
+  [[ "${MOCK_MUTANTS:-killed}" != none ]] || mutants=''
+  echo "<mutations>${mutants}</mutations>" > target/pit-reports/mutations.xml
+  exit "${MOCK_PIT_EXIT:-0}"
+fi
 if [[ "${MOCK_REPORT:-pass}" == missing ]]; then exit 0; fi
 reports=surefire-reports
 [[ "$*" != *verify* ]] || reports=failsafe-reports
+[[ "$*" != *@architecture* ]] || reports=architecture-reports
 mkdir -p "target/${reports}"
 tests=1; failures=0; errors=0; skipped=0
 case "${MOCK_REPORT:-pass}" in
@@ -85,4 +100,35 @@ check 1 'SKIP_INTEGRATION deve ser 0 ou 1' verify.sh SKIP_INTEGRATION=invalid
 mv "${FIXTURE}/src/test/java/ExampleTest.java" "${FIXTURE}/src/test/java/ExampleTest.fixture"
 check 0 'Build=PASS; Unitários=SKIP; Integração=PASS' verify.sh
 grep -Fq '[PARCIAL]' "${FIXTURE}/output"
+
+# Quality gates sem código ou testes elegíveis: SKIP sem chamar Maven.
+check 3 'Arquitetura: não existem classes' test-architecture.sh
+check 3 'não existe código elegível' test-coverage.sh
+check 3 'não existe código de negócio elegível' test-mutation.sh
+grep -Fq 'Arquitetura=SKIP; Cobertura=SKIP; Mutação=NOT RUN' <(bash "${FIXTURE}/scripts/verify.sh" 2>&1)
+
+# Testes ArchUnit não tornam a suíte unitária elegível e usam relatórios próprios.
+touch "${FIXTURE}/src/test/java/ExampleArchitectureTest.java"
+check 3 'Unitários: não existem classes' test-unit.sh
+check 0 '[PASS] Arquitetura: 1' test-architecture.sh
+grep -q 'surefire:test@architecture' "${FIXTURE_TRACE}"
+check 3 'execução incompleta' test-architecture.sh MOCK_REPORT=partial
+check 1 'falhas nos relatórios' test-architecture.sh MOCK_REPORT=failure
+
+# Cobertura: código elegível exige dados de execução; LINE sem BRANCH não é aprovação.
+domain="${FIXTURE}/src/main/java/io/github/wesleyosantos91/catalog/feature/sample/domain"
+mkdir -p "${domain}"
+touch "${domain}/Sample.java"
+mkdir -p "${FIXTURE}/target"
+rm -f "${FIXTURE}/target/"jacoco-*.exec
+check 1 'não há dados de execução' test-coverage.sh
+echo data > "${FIXTURE}/target/jacoco-unit.exec"
+check 0 '[PASS] Cobertura' test-coverage.sh
+check 3 'não há branches elegíveis' test-coverage.sh MOCK_COVERAGE=nobranch
+check 1 'jacoco:check rejeitou' test-coverage.sh MOCK_COVERAGE_EXIT=1
+
+# Mutação: ausência de mutantes é SKIP; threshold rejeitado é FAIL.
+check 0 '[PASS] Mutação' test-mutation.sh
+check 3 'nenhum mutante gerado' test-mutation.sh MOCK_MUTANTS=none
+check 1 'PIT rejeitou o threshold' test-mutation.sh MOCK_PIT_EXIT=1
 echo "[PASS] Contratos do harness verificados com Maven/Docker simulados. Fixtures: ${FIXTURE}"
