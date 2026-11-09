@@ -1,9 +1,9 @@
 # PRD-001 — Product Catalog API
 
-**Projeto:** Java AI Engineering Lab  
-**Versão do documento:** 0.2  
-**Status:** Proposto — aguardando validação  
-**Responsável pela aprovação:** Responsável técnico do projeto
+**Projeto:** Java AI Engineering Lab\
+**Versão do documento:** 1.0\
+**Status:** Aprovado\
+**Responsável pela aprovação:** Wesley Oliveira Santos
 
 ## 1. Contexto
 
@@ -402,12 +402,10 @@ ser declarados pendentes, nunca aprovados.
 
 ## 13. Aprovação do contrato
 
-**Status:** Proposto — aguardando aprovação.
+**Status:** Aprovado — versão 1.0.
 
-O contrato poderá ser congelado após a revisão
-dos requisitos, cenários e ambiguidades.
+Os requisitos, cenários e regras desta versão
+constituem o contrato aprovado para os experimentos.
 
 Mudanças posteriores deverão gerar uma nova versão
 do PRD e ser consideradas no protocolo experimental.
-
-```
