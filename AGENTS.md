@@ -36,10 +36,23 @@ Consulte os documentos conforme a natureza da tarefa.
 | Organização de packages | `docs/architecture/package-conventions.md` |
 | Regras de dependência | `docs/architecture/dependency-rules.md` |
 | Critérios de conclusão | `docs/engineering/definition-of-done.md` |
+| Catálogo e governança de features | [docs/features/README.md](docs/features/README.md) |
+| Modelo de especificação de feature | [docs/features/TEMPLATE.md](docs/features/TEMPLATE.md) |
+| Criação e revisão de documentação técnica | `.agents/skills/project-documentation/SKILL.md` |
+| Navegação pela documentação | `README.md` (quando publicado) |
 
 Não leia automaticamente toda a documentação do repositório.
 
 Carregue primeiro os documentos diretamente relacionados à tarefa. Amplie o contexto apenas quando necessário.
+
+Localize especificações de features pelo padrão `docs/features/FEAT-XXXX-*/spec.md`. Esse padrão representa arquivos futuros; consulte o catálogo para identificar as especificações existentes.
+
+### Descoberta de skills
+
+- Para tarefas de documentação, consulte `.agents/skills/project-documentation/SKILL.md`, caso exista na árvore de trabalho.
+- Siga as instruções da skill no escopo autorizado, carregando os arquivos em `references/` somente quando relevantes.
+- Não presuma que uma skill foi instalada ou executada apenas porque é mencionada aqui. Se o arquivo não existir, reporte a pendência e utilize as regras documentais já disponíveis no repositório.
+- O `AGENTS.md` é o ponto de entrada do contexto; a skill contém procedimentos especializados e não substitui o PRD, os ADRs ou o Definition of Done.
 
 ## 4. Regras arquiteturais
 
@@ -70,6 +83,30 @@ Para cada tarefa de implementação:
 9. Relate evidências, limitações e pendências.
 
 Não implemente funcionalidades fora do escopo autorizado.
+
+### Novas features
+
+Consulte o [catálogo de features](docs/features/README.md) e utilize o [template de especificação](docs/features/TEMPLATE.md) para registrar uma nova demanda no escopo autorizado.
+
+1. Identifique se a demanda já está prevista no PRD e consulte a especificação da feature, quando existente.
+2. Não modifique contratos aprovados sem autorização; confirme o escopo e a referência de sua aprovação antes de implementar.
+3. Planeje a implementação conforme os documentos arquiteturais relevantes, sem criar packages ou abstrações antecipadamente.
+4. Utilize o harness local conforme a seção 7, diferenciando verificações completas, parciais e não executadas.
+5. Atualize a especificação, o catálogo e a documentação pertinente com apoio da skill `project-documentation`, quando disponível.
+6. Apresente evidências, limitações e pendências; aguarde revisão humana antes de registrar a feature como Concluída.
+
+### Documentação durante o desenvolvimento
+
+Quando a tarefa criar ou revisar documentação, ou quando alterações em código, contratos REST, regras de negócio, arquitetura, scripts ou configuração tornarem a documentação existente desatualizada:
+
+1. Consulte `.agents/skills/project-documentation/SKILL.md` antes de editar documentos, se a skill estiver disponível.
+2. Leia apenas os documentos e referências relacionados ao escopo da tarefa.
+3. Diferencie requisitos aprovados, decisões arquiteturais aceitas, comportamento realmente implementado e capacidades futuras.
+4. Atualize os documentos relacionados e `README.md` quando houver nova página, conforme a skill, sem criar estrutura vazia.
+5. Não altere unilateralmente um PRD aprovado, ADR aceito ou resultados de experimentos para acomodar uma implementação divergente; registre o conflito e solicite decisão técnica.
+6. Revise links relativos, exemplos, blocos de código e formatação Markdown. Execute as verificações documentais disponíveis e informe o que não pôde verificar.
+
+A referência a uma skill orienta a descoberta de instruções; não aciona execução automática, não autoriza modificar arquivos e não garante compatibilidade de descoberta entre provedores de agentes.
 
 ## 6. Testes e qualidade
 
