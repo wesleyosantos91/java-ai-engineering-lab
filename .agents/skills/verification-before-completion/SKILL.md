@@ -33,7 +33,7 @@ Afirmação sem evidência não é conclusão. Este procedimento operacionaliza 
 - SKIP e NOT RUN não equivalem a PASS.
 - `SKIP_INTEGRATION=1` produz resultado parcial e precisa de justificativa comunicada.
 - Código de saída zero sem testes elegíveis não prova comportamento.
-- Quality gates não configurados (JaCoCo, PIT, ArchUnit) não podem ser declarados aprovados.
+- Quality gates em SKIP ou NOT RUN não podem ser declarados aprovados. A mutação não integra o `verify.sh`: para os gates completos, execute também `bash scripts/test-mutation.sh`.
 
 ## Relato final
 

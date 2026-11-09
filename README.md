@@ -30,7 +30,7 @@ O domínio de estudo é uma **Product Catalog API** (CRUD de produtos com Postgr
 | Endpoints `/api/v1/products` | ⏳ Especificados no PRD, não implementados |
 | Migrações Flyway | ⏳ Nenhuma migração criada |
 | Testes unitários de produto | ⏳ Inexistentes; a suíte unitária retorna `SKIP` |
-| Quality gates (JaCoCo, PIT, ArchUnit) | ⏳ Planejados, não configurados |
+| Quality gates (JaCoCo, ArchUnit, PIT) | ✅ Configurados e validados em cópia isolada; no scaffold retornam `SKIP` por falta de código elegível |
 | Observabilidade (Datadog) e testes de carga (k6) | ⏳ Planejados; os scripts em `performance/k6/` estão vazios |
 
 ## Stack
@@ -41,7 +41,8 @@ O domínio de estudo é uma **Product Catalog API** (CRUD de produtos com Postgr
 | Framework | Spring Boot 4.1.2 (Spring Web MVC) |
 | Persistência | Spring JDBC com SQL explícito; sem JPA ([ADR-0001](docs/architecture/adr/0001-architecture-principles.md)) |
 | Banco de dados | PostgreSQL, com esquema versionado por Flyway |
-| Testes | JUnit Jupiter, Surefire (`*Test`) e Failsafe (`*IT`), Testcontainers com PostgreSQL 18.2 fixado por digest |
+| Testes | JUnit Jupiter 6, Surefire (`*Test`) e Failsafe (`*IT`), Testcontainers com PostgreSQL 18.2 fixado por digest |
+| Quality gates | JaCoCo 0.8.16, ArchUnit 1.5.1, PIT 1.30.1 ([detalhes](docs/how-to/run-tests.md#quality-gates)) |
 | Build | Maven 3.10.0 via Maven Wrapper 3.3.4 |
 | Arquitetura | Feature-Based pragmática, package base `io.github.wesleyosantos91.catalog` |
 
@@ -62,7 +63,7 @@ bash scripts/setup.sh    # inspeciona Java, Maven Wrapper e Docker
 bash scripts/verify.sh   # build, testes unitários e de integração
 ```
 
-O `verify.sh` termina com um resumo por etapa (`PASS`, `FAIL`, `SKIP` ou `NOT RUN`). No estado atual, sem testes unitários, a etapa unitária retorna `SKIP` e o resultado agregado é **PARCIAL**. Isso é esperado e **não** equivale a aprovação. Detalhes, códigos de saída e diagnóstico estão no [guia de testes](docs/how-to/run-tests.md).
+O `verify.sh` termina com um resumo por etapa (`PASS`, `FAIL`, `SKIP` ou `NOT RUN`). No estado atual, sem código de negócio, as etapas unitária, de arquitetura e de cobertura retornam `SKIP` e o resultado agregado é **PARCIAL**. Isso é esperado e **não** equivale a aprovação. A mutação exige execução explícita com `bash scripts/test-mutation.sh`. Detalhes, códigos de saída e diagnóstico estão no [guia de testes](docs/how-to/run-tests.md).
 
 ## Harness de engenharia
 
@@ -72,9 +73,12 @@ Scripts versionados em `scripts/`, preferidos a comandos Maven avulsos por pesso
 |---|---|
 | `scripts/setup.sh` | Inspecionar ambiente, versões e Docker |
 | `scripts/build.sh` | Compilar com o Maven Wrapper |
-| `scripts/test-unit.sh` | Executar somente `*Test.java` (Surefire) |
+| `scripts/test-unit.sh` | Executar somente `*Test.java` (Surefire), exceto testes de arquitetura |
+| `scripts/test-architecture.sh` | Executar as regras ArchUnit (`*ArchitectureTest.java`) |
 | `scripts/test-integration.sh` | Executar somente `*IT.java` (Failsafe) com Testcontainers |
-| `scripts/verify.sh` | Orquestrar build, unitários e integração |
+| `scripts/test-coverage.sh` | Aplicar JaCoCo LINE e BRANCH ≥ 90% sobre os dados das suítes |
+| `scripts/test-mutation.sh` | Aplicar PIT, mutation score ≥ 90% (execução explícita) |
+| `scripts/verify.sh` | Orquestrar build, unitários, arquitetura, integração e cobertura |
 | `scripts/guard-branch.sh` | Bloquear operações de entrega em `develop`, `main` ou `master` |
 | `scripts/tests/` | Testes do próprio harness |
 

@@ -30,13 +30,15 @@ Esta skill resume os pontos de verificação; em divergência, os documentos pre
 
 ## Verificação prática
 
-Até a configuração do ArchUnit, a verificação é por revisão. Um auxílio é procurar imports proibidos, por exemplo:
+Execute as regras automatizadas:
 
 ```bash
-grep -rnE "import org\.springframework\.(web|jdbc)" src/main/java --include=*.java | grep "/domain/"
+bash scripts/test-architecture.sh
 ```
 
-Ausência de resultado nesse comando não prova conformidade total; declare a verificação como revisão manual assistida, não como validação automática.
+As regras estão em `src/test/java/io/github/wesleyosantos91/catalog/architecture/ArchitectureTest.java` e cobrem a verificação 3, as proibições das verificações 2 e 6, o acesso a persistence e SQL da 4 e a ausência de JPA da 5. Regras sem classes elegíveis aparecem como SKIP, não como aprovação.
+
+Continuam exigindo revisão: a verificação 1, a lista completa de dependências permitidas da 2, a ausência de regra de negócio e de coordenação transacional em controllers (4), as decisões de negócio na persistence (5) e o YAGNI (7). Declare-as como revisão manual, não como validação automática. Ao identificar nova restrição documentada, siga a [skill quality-gates](../quality-gates/SKILL.md) para adicionar a regra.
 
 ## Quando parar
 

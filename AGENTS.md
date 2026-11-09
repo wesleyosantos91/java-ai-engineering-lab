@@ -78,7 +78,7 @@ Todas as skills ficam em `.agents/skills/<nome>/SKILL.md`. O fluxo ordinário é
 | API | `rest-api-contract` | Endpoints, status e `ProblemDetail` conforme o PRD |
 | Segurança | `security-review` | Segredos, injeção, exposição de dados e dependências |
 | Performance | `performance-optimization` | Medição e otimização com protocolo reproduzível |
-| Qualidade | `quality-gates` | JaCoCo, PIT e ArchUnit (ainda não configurados) |
+| Qualidade | `quality-gates` | Executar e interpretar JaCoCo, PIT e ArchUnit |
 | Verificação | `verification-before-completion` | Antes de declarar qualquer conclusão |
 | Revisão | `code-review` | Revisar diff, branch ou pull request |
 | Entrega | `git-delivery` | Commit e PR somente com autorização explícita |
@@ -146,14 +146,14 @@ Adote TDD quando apropriado, preservando evidências de Red, Green e Refactor qu
 
 Utilize cenários BDD para descrever comportamentos observáveis. BDD não exige necessariamente Cucumber.
 
-Metas futuras, após configuração dos respectivos mecanismos:
+Metas dos Quality Gates, configurados no `pom.xml` e no harness (seção 7):
 
 - JaCoCo: pelo menos 90% de cobertura de linhas elegíveis.
 - JaCoCo: pelo menos 90% de cobertura de branches elegíveis.
 - PIT: pelo menos 90% de mutation score no código elegível.
 - ArchUnit: nenhuma violação das regras arquiteturais definidas.
 
-Não declare um Quality Gate aprovado antes de sua execução real.
+Não declare um Quality Gate aprovado antes de sua execução real. Enquanto não houver código ou classes elegíveis, o resultado é `SKIP`, não aprovação.
 
 Não reduza limites, remova testes ou altere o escopo de cobertura apenas para fazer a verificação passar.
 
@@ -167,12 +167,16 @@ O repositório possui um harness local versionado em `scripts/`. Os agentes deve
 |---|---|
 | `scripts/setup.sh` | Inspecionar ambiente, versões e disponibilidade do Docker |
 | `scripts/build.sh` | Compilar o projeto com o Maven Wrapper |
-| `scripts/test-unit.sh` | Executar exclusivamente `*Test.java` pelo Surefire |
+| `scripts/test-unit.sh` | Executar exclusivamente `*Test.java` pelo Surefire, exceto `*ArchitectureTest.java` |
+| `scripts/test-architecture.sh` | Executar as regras ArchUnit (`*ArchitectureTest.java`) em execução Surefire dedicada |
 | `scripts/test-integration.sh` | Executar exclusivamente `*IT.java` pelo Failsafe até a fase `verify`, com Testcontainers |
+| `scripts/test-coverage.sh` | Gerar relatórios JaCoCo e aplicar LINE e BRANCH ≥ 90% sobre os dados das suítes |
+| `scripts/test-mutation.sh` | Executar PIT e aplicar mutation score ≥ 90% (execução explícita) |
 | `scripts/guard-branch.sh` | Verificar a branch local antes de operações de entrega |
-| `scripts/verify.sh` | Orquestrar compilação, testes unitários disponíveis e integração |
+| `scripts/verify.sh` | Orquestrar build, unitários, arquitetura, integração e cobertura |
 | `scripts/tests/test-harness.sh` | Verificar status e erros do harness com Maven/Docker simulados |
 | `scripts/tests/test-maven-isolation.sh` | Verificar isolamento e agent do Mockito com Maven/Docker reais em cópia temporária |
+| `scripts/tests/test-quality-gates.sh` | Provar com Maven real, em cópia temporária, que ArchUnit, JaCoCo e PIT rejeitam violações e aprovam código conforme |
 
 Execute os scripts a partir do ambiente Bash compatível, por exemplo Git Bash no Windows. Eles localizam a raiz do repositório independentemente do diretório de invocação.
 
@@ -219,15 +223,27 @@ O `test-unit.sh` informa `SKIP` caso não existam classes elegíveis com o sufix
 
 `SKIP` não equivale a testes aprovados. Classes `*Tests.java`, `Test*.java` e `*ITCase.java` não fazem parte das convenções adotadas. Classes auxiliares podem existir, mas testes executáveis devem terminar exatamente em `Test` ou `IT`.
 
-Surefire executa somente `*Test.java` na fase `test`; Failsafe executa somente `*IT.java` em `integration-test` e verifica o resultado em `verify`. Unitários não devem carregar contexto Spring nem iniciar Testcontainers. Mockito é carregado como Java Agent na inicialização das JVMs de ambas as suítes.
+Surefire executa somente `*Test.java` na fase `test`; Failsafe executa somente `*IT.java` em `integration-test` e verifica o resultado em `verify`. Unitários não devem carregar contexto Spring nem iniciar Testcontainers. Mockito é carregado como Java Agent na inicialização das JVMs de ambas as suítes, composto com o agent JaCoCo de cada suíte.
+
+Testes ArchUnit terminam em `ArchitectureTest`, ficam em `io.github.wesleyosantos91.catalog.architecture` e não contam como unitários: a execução default do Surefire os exclui, e o `test-architecture.sh` os executa com relatórios em `target/architecture-reports/`.
 
 Os scripts de suíte retornam `0` para PASS, `3` para SKIP (ausência de classes elegíveis ou testes ignorados) e erro diferente de zero para FAIL. Relatórios ausentes, zero testes descobertos em classes elegíveis e falhas de Maven/Docker produzem FAIL. O `verify.sh` trata `3` explicitamente, continua as verificações disponíveis e informa resultado PARCIAL se houver SKIP; erros interrompem a execução e as etapas restantes ficam NOT RUN. Seu retorno zero com resultado PARCIAL não satisfaz uma obrigação de teste pendente da DoD.
 
-### Quality Gates e comandos futuros
+### Quality Gates
 
-JaCoCo, PIT e ArchUnit ainda não estão integrados ao harness. Scripts de cobertura, mutação, performance e Docker Build também não devem ser apresentados como operacionais antes de sua implementação.
+| Gate | Script | Fluxo | Escopo elegível |
+|---|---|---|---|
+| ArchUnit | `test-architecture.sh` | `verify.sh` | Classes de produção em `io.github.wesleyosantos91.catalog`, por regra |
+| JaCoCo | `test-coverage.sh` | `verify.sh`, após as suítes | Código de produção, exceto `JavaAiEngineeringLabApplication` |
+| PIT | `test-mutation.sh` | Execução explícita | `feature.*.domain` e `feature.*.service`, exercitados por testes `*Test` |
 
-Não declare cobertura, mutation score, validação arquitetural automática ou desempenho aprovado sem execução verificável dos mecanismos correspondentes.
+- **Fluxo padrão:** `verify.sh` executa build, unitários, arquitetura, integração e cobertura. Mesmo com todas as etapas em PASS, informa resultado PARCIAL para os quality gates completos, porque a mutação fica NOT RUN.
+- **Quality gates completos:** `bash scripts/verify.sh` seguido de `bash scripts/test-mutation.sh`.
+- Os três scripts usam os mesmos códigos de saída das suítes: `0` PASS, `3` SKIP e `1` FAIL. Ausência de código, classes, branches ou mutantes elegíveis produz `SKIP`. Uma regra ArchUnit sem classes elegíveis é reportada como teste ignorado.
+- `test-coverage.sh` não executa testes. Ele consome `target/jacoco-unit.exec` e `target/jacoco-it.exec` da execução atual e falha se houver código elegível sem dados. Com `SKIP_INTEGRATION=1`, o `verify.sh` registra a cobertura como SKIP.
+- Não altere metas, escopos ou exclusões, nem suprima regras, para obter aprovação. Mudanças nesses itens exigem justificativa e revisão humana.
+
+Scripts de performance e Docker Build ainda não existem e não devem ser apresentados como operacionais. Não declare desempenho aprovado sem execução verificável.
 
 ### Evidências obrigatórias
 

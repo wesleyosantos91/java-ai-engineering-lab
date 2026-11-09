@@ -34,9 +34,9 @@ Um critério de teste obrigatório aplicável só é atendido por resultado sati
 
 O caminho normal de resolução é investigar a causa, corrigir o código e executar novamente os testes pertinentes, preservando o histórico da falha e da correção. Não é permitido remover ou desabilitar testes, alterar contratos ou reduzir limites apenas para obter sucesso. Uma justificativa de desabilitação não dispensa a obrigação de qualidade aplicável.
 
-### Quality Gates futuros
+### Quality Gates
 
-Após a configuração das ferramentas, serão exigidos:
+As ferramentas estão configuradas no `pom.xml` e no harness ([guia de testes](../how-to/run-tests.md#quality-gates)). Uma vez obrigatórios, conforme a condição ao final deste documento, serão exigidos:
 
 - JaCoCo: cobertura mínima de 90% das linhas elegíveis.
 - JaCoCo: cobertura mínima de 90% dos branches elegíveis.
@@ -44,6 +44,8 @@ Após a configuração das ferramentas, serão exigidos:
 - ArchUnit: nenhuma violação das regras arquiteturais definidas.
 
 As exclusões deverão ser explícitas e justificadas.
+
+Ausência de código, classes, branches ou mutantes elegíveis resulta em `SKIP` e não satisfaz o gate. A mutação não integra o `verify.sh` e exige execução explícita de `scripts/test-mutation.sh`.
 
 Cobertura não substitui testes comportamentais relevantes.
 
@@ -114,4 +116,4 @@ Registre a exceção nas seções de evidências e aprovação da especificaçã
 
 Mesmo aprovada e documentada, uma exceção não permite declarar a feature Concluída enquanto algum critério obrigatório permanecer pendente. O checklist deve manter explícito o que não foi atendido. Uma execução parcial pode ser autorizada e registrada, mas continua parcial; não demonstra aceitação completa. Se não houver obrigações pendentes, a conclusão ainda depende das demais condições e da revisão humana previstas no [catálogo](../features/README.md), sem criar um estado adicional de feature.
 
-Os Quality Gates futuros só se tornam obrigatórios quando as respectivas ferramentas estiverem configuradas e operacionalmente validadas.
+Os Quality Gates só se tornam obrigatórios quando as respectivas ferramentas estiverem configuradas e operacionalmente validadas. A configuração da Etapa 6B foi validada em cópias isoladas com código de exemplo; o reconhecimento da validação operacional depende de revisão humana registrada.
