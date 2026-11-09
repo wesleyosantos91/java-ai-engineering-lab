@@ -13,7 +13,10 @@ As especificações detalham o trabalho autorizado e não substituem os contrato
 | [Convenções de packages](../architecture/package-conventions.md) e [regras de dependência](../architecture/dependency-rules.md) | Orientam organização e fronteiras técnicas |
 | [Definition of Done](../engineering/definition-of-done.md) | Define critérios de conclusão e política de exceções |
 | [AGENTS.md](../../AGENTS.md) | Orienta descoberta de contexto, autonomia, implementação e uso do harness local |
+| [Skill feature-delivery](../../.agents/skills/feature-delivery/SKILL.md) | Orienta a execução do ciclo de entrega por agentes, do contrato às evidências e à revisão humana |
 | [Skill project-documentation](../../.agents/skills/project-documentation/SKILL.md) | Orienta estrutura editorial, validação e atualização da documentação |
+
+O catálogo mantém o estado e a governança; a skill `feature-delivery` orienta a execução por agentes sem substituir as condições de aprovação e transição aqui definidas. Consulte seu workflow sob demanda, apenas nas fases pertinentes à solicitação. A referência à skill não garante descoberta ou execução automática pelo cliente.
 
 Consulte outras skills de engenharia somente quando existirem e forem pertinentes à tarefa; este catálogo não pressupõe sua instalação. Código, testes, scripts e configurações comprovam o comportamento implementado, sem autorizar alterações unilaterais no PRD ou em ADRs aceitos. Registre e encaminhe divergências ao responsável técnico.
 

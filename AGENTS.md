@@ -38,6 +38,7 @@ Consulte os documentos conforme a natureza da tarefa.
 | Critérios de conclusão | `docs/engineering/definition-of-done.md` |
 | Catálogo e governança de features | [docs/features/README.md](docs/features/README.md) |
 | Modelo de especificação de feature | [docs/features/TEMPLATE.md](docs/features/TEMPLATE.md) |
+| Entrega e evolução de features | [.agents/skills/feature-delivery/SKILL.md](.agents/skills/feature-delivery/SKILL.md) |
 | Criação e revisão de documentação técnica | `.agents/skills/project-documentation/SKILL.md` |
 | Navegação pela documentação | `README.md` (quando publicado) |
 
@@ -49,10 +50,12 @@ Localize especificações de features pelo padrão `docs/features/FEAT-XXXX-*/sp
 
 ### Descoberta de skills
 
+- Para criação ou evolução funcional, implementação de requisitos, correções de comportamento e validação de aceitação, consulte `.agents/skills/feature-delivery/SKILL.md`, quando disponível.
 - Para tarefas de documentação, consulte `.agents/skills/project-documentation/SKILL.md`, caso exista na árvore de trabalho.
 - Siga as instruções da skill no escopo autorizado, carregando os arquivos em `references/` somente quando relevantes.
 - Não presuma que uma skill foi instalada ou executada apenas porque é mencionada aqui. Se o arquivo não existir, reporte a pendência e utilize as regras documentais já disponíveis no repositório.
 - O `AGENTS.md` é o ponto de entrada do contexto; a skill contém procedimentos especializados e não substitui o PRD, os ADRs ou o Definition of Done.
+- Consultar uma skill não implica execução automática nem autoriza modificar contratos aprovados, realizar commits ou publicar alterações.
 
 ## 4. Regras arquiteturais
 
@@ -86,7 +89,7 @@ Não implemente funcionalidades fora do escopo autorizado.
 
 ### Novas features
 
-Consulte o [catálogo de features](docs/features/README.md) e utilize o [template de especificação](docs/features/TEMPLATE.md) para registrar uma nova demanda no escopo autorizado.
+Utilize a [skill feature-delivery](.agents/skills/feature-delivery/SKILL.md) para orientar a entrega e evolução funcional, carregando apenas as fases pertinentes do workflow. O [catálogo de features](docs/features/README.md) mantém a governança e o [template de especificação](docs/features/TEMPLATE.md) orienta o registro de uma nova demanda no escopo autorizado.
 
 1. Identifique se a demanda já está prevista no PRD e consulte a especificação da feature, quando existente.
 2. Não modifique contratos aprovados sem autorização; confirme o escopo e a referência de sua aprovação antes de implementar.
