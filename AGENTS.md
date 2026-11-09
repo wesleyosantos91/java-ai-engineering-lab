@@ -130,7 +130,19 @@ a especificação Conventional Commits.
 
 Formato obrigatório:
 
-<type>(<scope>): <description>
+`<type>(<scope>): <description>`
+
+O `scope` é opcional.
+
+Exemplos:
+
+```text
+feat(product): add product creation endpoint
+fix(product): prevent duplicate SKU creation
+docs(architecture): define package conventions
+test(product): cover concurrent product creation
+build(maven): configure jacoco and pit
+```
 
 O scope é opcional.
 
