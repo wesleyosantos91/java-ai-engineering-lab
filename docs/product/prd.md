@@ -206,4 +206,165 @@ Em duas tentativas concorrentes de criação com o mesmo SKU, apenas uma poderá
 
 O resultado esperado é:
 
-- Uma requisição
+
+- Uma requisição deverá retornar `201 Created`.
+- A outra requisição deverá retornar `409 Conflict`.
+- Apenas um produto deverá ser persistido.
+
+A unicidade deverá ser garantida por uma restrição
+`UNIQUE` no PostgreSQL, considerando o SKU normalizado.
+
+A aplicação deverá traduzir conflitos de unicidade
+para uma resposta HTTP consistente.
+
+## 8. Critérios de aceitação — BDD
+
+### CA-01 — Criação válida
+
+**Dado** um SKU inexistente  
+**Quando** uma requisição válida de criação for enviada  
+**Então** a API deverá retornar `201 Created`  
+**E** o produto deverá ser persistido  
+**E** o cabeçalho `Location` deverá identificar o recurso.
+
+### CA-02 — SKU duplicado
+
+**Dado** um produto com SKU `ABC-001`  
+**Quando** uma criação com SKU `abc-001` for solicitada  
+**Então** a API deverá retornar `409 Conflict`  
+**E** nenhum produto adicional deverá ser persistido.
+
+### CA-03 — Preço inválido
+
+**Dado** um preço igual a zero  
+**Quando** uma criação for solicitada  
+**Então** a API deverá retornar `400 Bad Request`  
+**E** o produto não deverá ser persistido.
+
+### CA-04 — Produto inexistente
+
+**Dado** um UUID válido sem produto correspondente  
+**Quando** a consulta for realizada  
+**Então** a API deverá retornar `404 Not Found`.
+
+### CA-05 — Atualização válida
+
+**Dado** um produto existente  
+**Quando** seus campos editáveis forem atualizados  
+**Então** a API deverá retornar `200 OK`  
+**E** os novos valores deverão ser persistidos  
+**E** `id` e `createdAt` permanecerão inalterados.
+
+### CA-06 — Exclusão
+
+**Dado** um produto existente  
+**Quando** a exclusão for solicitada  
+**Então** a API deverá retornar `204 No Content`  
+**E** uma consulta posterior retornará `404 Not Found`.
+
+### CA-07 — Paginação
+
+**Dado** um conjunto de produtos persistidos  
+**Quando** uma página for consultada  
+**Então** a API deverá respeitar `page` e `size`  
+**E** apresentar os metadados de paginação  
+**E** respeitar a ordenação estabelecida.
+
+### CA-08 — Concorrência
+
+**Dadas** duas requisições concorrentes com o mesmo SKU  
+**Quando** ambas tentarem criar o produto  
+**Então** apenas uma deverá ser bem-sucedida  
+**E** a outra deverá retornar `409 Conflict`  
+**E** somente um registro deverá existir no banco.
+
+## 9. Requisitos não funcionais
+
+### Arquitetura
+
+Respeitar os documentos:
+
+- `docs/architecture/adr/0001-architecture-principles.md`
+- `docs/architecture/package-conventions.md`
+- `docs/architecture/dependency-rules.md`
+
+### Qualidade
+
+Os comportamentos deverão ser verificáveis por:
+
+- Testes unitários.
+- Testes de integração com PostgreSQL.
+- Testes externos de contrato.
+- Testes de concorrência quando aplicáveis.
+
+### Segurança
+
+Não expor credenciais, SQL interno, dados sensíveis
+ou stack traces nas respostas e logs.
+
+### Observabilidade
+
+Permitir a instrumentação futura de:
+
+- Tráfego.
+- Latência.
+- Erros.
+- Saturação.
+
+### Performance
+
+Metas absolutas de latência e throughput somente
+serão definidas mediante protocolo de medição
+reproduzível.
+
+## 10. Fora do escopo da primeira versão
+
+- Autenticação e autorização.
+- Kafka, SQS e RabbitMQ.
+- Cache distribuído.
+- Integração com serviços externos.
+- Soft delete.
+- Processamento batch.
+- Busca textual avançada.
+- Multi-tenancy.
+- Controle de estoque.
+- Idempotency keys para requisições HTTP.
+- Deploy em produção.
+
+Esses recursos poderão integrar experimentos futuros.
+
+## 11. Regras para experimentação com IA
+
+- Versionar e aprovar este PRD antes das execuções.
+- Utilizar requisitos equivalentes nos grupos comparados.
+- Partir do mesmo baseline técnico.
+- Congelar as versões de requisitos utilizadas.
+- Não expor os testes de avaliação independente
+  aos agentes antes da conclusão dos experimentos.
+- Não permitir alterações unilaterais nos critérios
+  de aceitação.
+- Registrar separadamente sucesso, qualidade,
+  tempo, tokens, custo e intervenção humana.
+
+## 12. Critério de conclusão do produto
+
+Uma implementação será funcionalmente aceita
+quando satisfizer os critérios de aceitação deste PRD,
+com evidências reproduzíveis.
+
+A conclusão técnica também dependerá de:
+
+`docs/engineering/definition-of-done.md`
+
+Quality Gates ainda não implementados deverão
+ser declarados pendentes, nunca aprovados.
+
+## 13. Aprovação do contrato
+
+**Status:** Proposto — aguardando aprovação.
+
+O contrato poderá ser congelado após a revisão
+dos requisitos, cenários e ambiguidades.
+
+Mudanças posteriores deverão gerar uma nova versão
+do PRD e ser consideradas no protocolo experimental.
