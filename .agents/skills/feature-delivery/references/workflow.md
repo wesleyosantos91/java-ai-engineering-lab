@@ -78,7 +78,7 @@ bash scripts/verify.sh
 
 Relacione os critérios de aceitação aos testes específicos necessários. O teste de contexto atual não comprova uma suíte de negócio ou de contrato; verificações adicionais devem corresponder ao contrato e à configuração real. Não apresente comandos ou ferramentas futuros como operacionais.
 
-Registre cada verificação no relatório com comando ou método, ambiente, resultado observado, referência da evidência e limitações. Os rótulos abaixo pertencem ao relato; não pressupõem que os scripts emitam todos eles:
+Registre cada execução relevante separadamente, com comando ou método, ambiente, revisão da implementação avaliada, resultado observado, data quando disponível, referência da evidência e limitações. Identifique informações indisponíveis sem inventá-las. Os rótulos abaixo pertencem ao relato; não pressupõem que os scripts emitam todos eles:
 
 | Resultado | Significado |
 |---|---|
@@ -89,9 +89,11 @@ Registre cada verificação no relatório com comando ou método, ambiente, resu
 
 Nunca converta **SKIP** em **PASS**. Código de saída zero do script não prova testes inexistentes nem todos os critérios de aceitação. Se o harness parar em uma falha, registre as etapas posteriores como **NOT RUN**, sem supor sua execução.
 
-Utilize `SKIP_INTEGRATION=1 bash scripts/verify.sh` somente nas condições permitidas pelo AGENTS.md: omissão explicitamente autorizada ou justificada e comunicada. Declare resultado **parcial**, com a justificativa e os testes não executados. Indisponibilidade do Docker não permite omissão silenciosa.
+Uma execução parcial não substitui resultados anteriores. Preserve cada **FAIL** e sua investigação no histórico, inclusive quando uma execução posterior apresentar **PASS**. Um novo PASS pode demonstrar correção posterior do critério para a revisão e o ambiente avaliados, sem apagar a falha anterior. No resumo, diferencie histórico, resultado da execução atual e obrigações ainda pendentes.
 
-Investigue falhas antes de declarar prontidão. Não remova ou desabilite testes, reduza limites ou altere contratos apenas para obter aprovação. Verifique a configuração efetiva de JaCoCo, PIT e ArchUnit; no harness atual são mecanismos futuros, sem comprovação de cobertura, mutação ou regras arquiteturais automáticas.
+Utilize `SKIP_INTEGRATION=1 bash scripts/verify.sh` somente nas condições permitidas pelo AGENTS.md: omissão explicitamente autorizada ou justificada e comunicada. Declare resultado **parcial**, com a justificativa e os testes não executados. Essa execução registra SKIP para a integração e não transforma uma integração anteriormente reprovada em aprovada; preserve o FAIL anterior e a obrigação não resolvida. Indisponibilidade do Docker não permite omissão silenciosa.
+
+Investigue falhas antes de declarar prontidão. Inclua no relatório final as falhas ainda não investigadas, seus impactos e as ações pendentes; não as oculte. Não remova ou desabilite testes, reduza limites ou altere contratos apenas para obter aprovação. A [DoD, seção Testes e qualidade](../../../../docs/engineering/definition-of-done.md) define quando a obrigação é atendida e seu efeito sobre a conclusão. Verifique a configuração efetiva de JaCoCo, PIT e ArchUnit; no harness atual são mecanismos futuros, sem comprovação de cobertura, mutação ou regras arquiteturais automáticas.
 
 Para alterações exclusivamente documentais, revise links, exemplos, blocos Markdown e o diff completo, inclusive arquivos novos. Execute `git diff --check` e, se existirem alterações preparadas, `git diff --cached --check`. Build e testes Java não são necessários sem justificativa técnica adicional. Informe verificações não executadas; não alegue lint ou checagem automática de links que não existam.
 
@@ -107,7 +109,7 @@ Atualize especificação e catálogo quando pertinentes, além das páginas téc
 
 Revise o diff completo e os arquivos novos não rastreados. Confirme ausência de alterações inesperadas, escopo cumprido e conformidade com a DoD. Relacione cada critério de aceitação às evidências, identificando falhas, omissões, limitações, riscos e pendências com seus impactos.
 
-Prepare um relatório com objetivo realizado, arquivos envolvidos, decisões e justificativas, comandos e resultados reais, documentação atualizada, verificações não executadas e próximos passos. Uma implementação pode estar pronta para revisão sem a feature estar **Concluída**. Não declare critérios obrigatórios atendidos sem evidência; exceções seguem a política da DoD.
+Prepare um relatório com objetivo realizado, arquivos envolvidos, decisões e justificativas, comandos e resultados reais, documentação atualizada, verificações não executadas e próximos passos. Uma implementação pode estar pronta para revisão sem a feature estar **Concluída**. Não declare critérios obrigatórios atendidos sem evidência. Para exceções, aplique a [política normativa da DoD](../../../../docs/engineering/definition-of-done.md): registre o critério, a justificativa, o risco, as compensações, o plano de resolução ou reavaliação e a decisão humana verificável nos registros ali definidos. Aprovar uma exceção não aprova testes reprovados nem permite conclusão com critério obrigatório pendente.
 
 Não marque **Concluída** sem revisão humana favorável e referência verificável. Não execute commit ou push sem autorização explícita; publicação não é consequência automática do pedido de implementação. Quando uma operação Git de entrega estiver autorizada, execute antes `bash scripts/guard-branch.sh`, confirme branch, escopo e diff preparado e siga as regras de Conventional Commits do AGENTS.md. Merge, rebase destrutivo e force-push também dependem das autorizações aplicáveis.
 

@@ -25,10 +25,14 @@ Estabelecer critérios objetivos para considerar uma alteração concluída, ind
 
 - [ ] Os testes relevantes foram implementados.
 - [ ] Os testes unitários foram executados com sucesso.
-- [ ] Os testes de integração foram executados quando aplicáveis.
+- [ ] Os testes de integração foram executados com sucesso quando aplicáveis.
 - [ ] Os cenários de falha foram considerados.
 - [ ] Não existem testes desabilitados sem justificativa.
-- [ ] As falhas identificadas foram corrigidas ou documentadas.
+- [ ] As falhas identificadas foram investigadas e documentadas, e as obrigações de qualidade pendentes foram resolvidas com evidências.
+
+Um critério de teste obrigatório aplicável só é atendido por resultado satisfatório (`PASS`) com evidência. Documentar uma falha é obrigatório para rastreabilidade, mas não representa aprovação: um `FAIL` impede a conclusão enquanto a obrigação correspondente permanecer pendente. `SKIP` e `NOT RUN` também não satisfazem essa obrigação.
+
+O caminho normal de resolução é investigar a causa, corrigir o código e executar novamente os testes pertinentes, preservando o histórico da falha e da correção. Não é permitido remover ou desabilitar testes, alterar contratos ou reduzir limites apenas para obter sucesso. Uma justificativa de desabilitação não dispensa a obrigação de qualidade aplicável.
 
 ### Quality Gates futuros
 
@@ -94,6 +98,20 @@ Quando agentes de IA participarem:
 
 Uma alteração que não cumpra algum critério obrigatório não deverá ser declarada concluída.
 
-Exceções deverão ser justificadas, documentadas e aprovadas pelo responsável técnico.
+Somente o responsável técnico humano pode aprovar uma exceção; o agente pode propô-la e registrar a decisão verificável, sem concedê-la por conta própria. A aprovação de exceção é distinta da revisão humana de conclusão e não reclassifica `FAIL`, `SKIP` ou `NOT RUN` como `PASS`.
+
+Exceções podem tratar condições documentais ou operacionais justificáveis, como o adiamento de uma atividade não obrigatória. Elas não dispensam testes obrigatórios aplicáveis, não autorizam reduzir limites para obter aprovação nem afastam requisitos essenciais do contrato funcional ou sua comprovação. Uma falha que comprometa esses requisitos exige correção; mudanças de contrato seguem seu processo próprio de autorização, sem alterar requisitos congelados de experimentos por meio de exceção.
+
+Cada exceção deve registrar:
+
+1. O critério exato afetado, sua fonte e o efeito solicitado, explicitando se existe obrigação pendente.
+2. A justificativa de necessidade e as evidências da situação excepcional.
+3. O risco residual expressamente aceito e as medidas compensatórias adotadas; se inexistentes, registrar essa ausência e sua justificativa.
+4. O plano de resolução ou reavaliação, com responsável e prazo ou condição objetiva para revisão.
+5. A decisão, o responsável técnico que a aprovou, a data quando disponível e a referência verificável; informações indisponíveis devem ser identificadas, nunca inventadas.
+
+Registre a exceção nas seções de evidências e aprovação da especificação existente, conforme o [template de feature](../features/TEMPLATE.md), ou no registro versionado da tarefa quando não houver especificação. Vincule a decisão e sua evidência à pendência e ao relatório de revisão; uma aprovação genérica sem esses registros não constitui exceção válida.
+
+Mesmo aprovada e documentada, uma exceção não permite declarar a feature Concluída enquanto algum critério obrigatório permanecer pendente. O checklist deve manter explícito o que não foi atendido. Uma execução parcial pode ser autorizada e registrada, mas continua parcial; não demonstra aceitação completa. Se não houver obrigações pendentes, a conclusão ainda depende das demais condições e da revisão humana previstas no [catálogo](../features/README.md), sem criar um estado adicional de feature.
 
 Os Quality Gates futuros só se tornam obrigatórios quando as respectivas ferramentas estiverem configuradas e operacionalmente validadas.
