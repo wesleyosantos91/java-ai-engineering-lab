@@ -167,12 +167,16 @@ O repositório possui um harness local versionado em `scripts/`. Os agentes deve
 |---|---|
 | `scripts/setup.sh` | Inspecionar ambiente, versões e disponibilidade do Docker |
 | `scripts/build.sh` | Compilar o projeto com o Maven Wrapper |
-| `scripts/test-unit.sh` | Executar testes unitários elegíveis pela convenção atual `*Test.java` |
-| `scripts/test-integration.sh` | Executar o teste de contexto existente e testes `*IT` com Testcontainers |
+| `scripts/test-unit.sh` | Executar exclusivamente `*Test.java` pelo Surefire |
+| `scripts/test-integration.sh` | Executar exclusivamente `*IT.java` pelo Failsafe até a fase `verify`, com Testcontainers |
 | `scripts/guard-branch.sh` | Verificar a branch local antes de operações de entrega |
 | `scripts/verify.sh` | Orquestrar compilação, testes unitários disponíveis e integração |
+| `scripts/tests/test-harness.sh` | Verificar status e erros do harness com Maven/Docker simulados |
+| `scripts/tests/test-maven-isolation.sh` | Verificar isolamento e agent do Mockito com Maven/Docker reais em cópia temporária |
 
 Execute os scripts a partir do ambiente Bash compatível, por exemplo Git Bash no Windows. Eles localizam a raiz do repositório independentemente do diretório de invocação.
+
+Consulte o [guia operacional de testes](docs/how-to/run-tests.md) para comandos Maven equivalentes, relatórios, códigos de saída e diagnóstico. `scripts/lib/test-suite.sh` é um helper compartilhado de execução e leitura de relatórios; não é um comando independente.
 
 ### Regras de execução
 
@@ -205,15 +209,19 @@ A opção `SKIP_INTEGRATION=1 bash scripts/verify.sh` somente deve ser utilizada
 
 Nesse caso, o resultado é **parcial**, não uma verificação completa. Uma falha do Docker não autoriza omitir silenciosamente a integração.
 
-O `test-integration.sh` cobre o teste de contexto atual e a convenção futura `*IT`; não assuma que existe uma suíte de integração de negócio implementada.
+O `test-integration.sh` executa `verify -DskipUnitTests=true`: essa propriedade omite somente o Surefire, evitando repetir os unitários. A integração usa Failsafe, incluindo seu goal `verify`, que propaga falhas por código de saída. Não substitua essa propriedade por `skipTests`, que também afeta Failsafe 3.5.x.
+
+O teste `JavaAiEngineeringLabApplicationIT` carrega o contexto e verifica a versão do banco por JDBC. A imagem oficial PostgreSQL 18.2 está fixada por digest em `TestcontainersConfiguration`; atualizações exigem nova verificação. Não assuma que existe uma suíte de integração de negócio implementada.
 
 ### Testes unitários
 
 O `test-unit.sh` informa `SKIP` caso não existam classes elegíveis com o sufixo `*Test.java`.
 
-`SKIP` não equivale a testes aprovados. O teste `JavaAiEngineeringLabApplicationTests` pertence ao fluxo de integração existente, apesar do seu nome.
+`SKIP` não equivale a testes aprovados. Classes `*Tests.java`, `Test*.java` e `*ITCase.java` não fazem parte das convenções adotadas. Classes auxiliares podem existir, mas testes executáveis devem terminar exatamente em `Test` ou `IT`.
 
-A separação definitiva entre Surefire e Failsafe será configurada posteriormente.
+Surefire executa somente `*Test.java` na fase `test`; Failsafe executa somente `*IT.java` em `integration-test` e verifica o resultado em `verify`. Unitários não devem carregar contexto Spring nem iniciar Testcontainers. Mockito é carregado como Java Agent na inicialização das JVMs de ambas as suítes.
+
+Os scripts de suíte retornam `0` para PASS, `3` para SKIP (ausência de classes elegíveis ou testes ignorados) e erro diferente de zero para FAIL. Relatórios ausentes, zero testes descobertos em classes elegíveis e falhas de Maven/Docker produzem FAIL. O `verify.sh` trata `3` explicitamente, continua as verificações disponíveis e informa resultado PARCIAL se houver SKIP; erros interrompem a execução e as etapas restantes ficam NOT RUN. Seu retorno zero com resultado PARCIAL não satisfaz uma obrigação de teste pendente da DoD.
 
 ### Quality Gates e comandos futuros
 

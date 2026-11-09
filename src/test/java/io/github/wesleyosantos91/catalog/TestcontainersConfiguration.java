@@ -12,7 +12,10 @@ class TestcontainersConfiguration {
 	@Bean
 	@ServiceConnection
 	PostgreSQLContainer postgresContainer() {
-		return new PostgreSQLContainer(DockerImageName.parse("postgres:latest"));
+		// Official postgres:18.2, pinned by digest; Testcontainers 2.0.x needs explicit compatibility.
+		return new PostgreSQLContainer(DockerImageName.parse(
+				"postgres@sha256:a688ae5c99f86c1424e046ace0de890608cc0ddb5ec8ef72a6ff8305fdc8f4d2")
+				.asCompatibleSubstituteFor("postgres"));
 	}
 
 }
