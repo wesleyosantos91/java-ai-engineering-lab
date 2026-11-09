@@ -53,9 +53,38 @@ Localize especificações de features pelo padrão `docs/features/FEAT-XXXX-*/sp
 - Para criação ou evolução funcional, implementação de requisitos, correções de comportamento e validação de aceitação, consulte `.agents/skills/feature-delivery/SKILL.md`, quando disponível.
 - Para tarefas de documentação, consulte `.agents/skills/project-documentation/SKILL.md`, caso exista na árvore de trabalho.
 - Siga as instruções da skill no escopo autorizado, carregando os arquivos em `references/` somente quando relevantes.
+- Para as demais etapas, consulte o catálogo de skills abaixo e carregue apenas a skill pertinente à etapa atual.
 - Não presuma que uma skill foi instalada ou executada apenas porque é mencionada aqui. Se o arquivo não existir, reporte a pendência e utilize as regras documentais já disponíveis no repositório.
 - O `AGENTS.md` é o ponto de entrada do contexto; a skill contém procedimentos especializados e não substitui o PRD, os ADRs ou o Definition of Done.
 - Consultar uma skill não implica execução automática nem autoriza modificar contratos aprovados, realizar commits ou publicar alterações.
+
+### Catálogo de skills
+
+Todas as skills ficam em `.agents/skills/<nome>/SKILL.md`. O fluxo ordinário é: descoberta → especificação → planejamento → TDD → execução → simplificação → verificação → revisão → entrega.
+
+| Etapa | Skill | Quando usar |
+|---|---|---|
+| Orquestração | `feature-delivery` | Ciclo completo de uma entrega funcional |
+| Descoberta | `requirements-discovery` | Demanda vaga, ambígua ou com regra indefinida |
+| Especificação | `spec-driven-development` | Redigir ou revisar `spec.md` antes da aprovação |
+| Planejamento | `implementation-planning` | Plano técnico de tarefas verificáveis para mudança não trivial |
+| Execução | `plan-execution` | Executar plano aprovado tarefa a tarefa |
+| Continuidade | `task-state-files` | Tarefas longas, várias sessões ou troca de provider |
+| Testes | `tdd-workflow` | Ciclo Red, Green e Refactor com evidências |
+| Depuração | `systematic-debugging` | FAIL, defeito ou comportamento inesperado |
+| Refatoração | `code-simplification` | Reduzir complexidade sem mudar comportamento |
+| Arquitetura | `architecture-guard` | Verificar fronteiras, packages e dependências |
+| Persistência | `database-migration` | Flyway, SQL explícito e Spring JDBC |
+| API | `rest-api-contract` | Endpoints, status e `ProblemDetail` conforme o PRD |
+| Segurança | `security-review` | Segredos, injeção, exposição de dados e dependências |
+| Performance | `performance-optimization` | Medição e otimização com protocolo reproduzível |
+| Qualidade | `quality-gates` | JaCoCo, PIT e ArchUnit (ainda não configurados) |
+| Verificação | `verification-before-completion` | Antes de declarar qualquer conclusão |
+| Revisão | `code-review` | Revisar diff, branch ou pull request |
+| Entrega | `git-delivery` | Commit e PR somente com autorização explícita |
+| Documentação | `project-documentation` | Criar ou atualizar documentação técnica |
+| Experimentos | `experiment-protocol` | Experimentos AI-First e AI-Assisted |
+| Meta | `skill-authoring` | Criar, revisar ou avaliar skills |
 
 ## 4. Regras arquiteturais
 
