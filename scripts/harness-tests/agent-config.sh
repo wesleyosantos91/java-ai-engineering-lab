@@ -105,6 +105,17 @@ fresh
 echo '{ invalido' > "${f}/.claude/settings.json"
 check 1 '.claude/settings.json não é JSON válido.' "${f}" agents/check-config.sh
 
+# Arquivos ignorados: a cópia vira um repositório Git próprio (sem commits) para que a
+# verificação 8 execute. Preferências locais declaradas são permitidas; um script novo
+# ignorado por padrão genérico (build/) é detectado.
+fresh
+cp "${ROOT_DIR}/.gitignore" "${f}/.gitignore"
+git -C "${f}" init -q
+echo '{}' > "${f}/.claude/settings.local.json"
+check 0 '[PASS] Arquivos do harness e dos agentes não estão ignorados pelo Git.' "${f}" agents/check-config.sh
+sed -i '/^!\/scripts\/build\/$/d' "${f}/.gitignore"
+check 1 'não versionável: scripts/build/compile.sh' "${f}" agents/check-config.sh
+
 # Hook PreToolUse do Claude: bloqueia commit/push em develop e permite em feature/*.
 repo="${WORK}/hook repo"
 mkdir -p "${repo}/scripts/git" "${repo}/scripts/agents/hooks"

@@ -117,3 +117,39 @@ Entradas não são reescritas. Se um aprendizado se mostrar errado, mude o statu
 - **Aprendizado:** um teste do harness que mede gates sobre código de exemplo precisa isolar esse exemplo do código real (remover `feature/`, `shared/` e as migrações da cópia). Senão ele passa no scaffold e quebra na primeira feature. Ao criar uma feature, execute também `harness-tests/quality-gates.sh` e `harness-tests/maven-isolation.sh`.
 - **Destino:** aplicado em `scripts/harness-tests/quality-gates.sh`; somente registro
 - **Status:** Incorporada
+
+### LL-0012 — Jackson converte números e booleanos em `String` sem avisar
+
+- **Data:** 2026-11-20
+- **Contexto:** review do Devin no PR #1 (FEAT-0001).
+- **Evidência:** antes da correção, `ProductCreationIT.rejectsNonStringTextFields` falhou: `{"sku":123,...}`, `{"name":true,...}` e `{"description":42,...}` retornaram `201` (Jackson 3.1.7, Spring Boot 4.1.2).
+- **Aprendizado:** `fail-on-unknown-properties` não impede coerção de escalares. Campos cujo contrato exige string JSON precisam de validação de token (`JsonStringOnlyDeserializer`), assim como números exigem `JsonNumberOnlyDeserializer`. Teste o tipo errado de cada campo, não só os valores inválidos.
+- **Destino:** `CreateProductRequest` e a skill `rest-api-contract` (regra 7)
+- **Status:** Incorporada
+
+### LL-0013 — Sem `produces`, o Spring executa o handler e só depois responde 406
+
+- **Data:** 2026-11-20
+- **Contexto:** review do Devin no PR #1.
+- **Evidência:** `rejectsUnsupportedResponseMediaTypeWithoutPersisting` falhou antes da correção: com `Accept: text/html`, a resposta foi `406`, mas o produto já estava gravado (count esperado 0).
+- **Aprendizado:** a negociação de conteúdo da resposta acontece depois do método do controller. Endpoints com efeito colateral (`POST`, `PUT`, `DELETE`) devem declarar `produces` para que um `Accept` incompatível seja rejeitado no mapeamento, antes da transação.
+- **Destino:** `ProductController` e a skill `rest-api-contract` (regra 8)
+- **Status:** Incorporada
+
+### LL-0014 — Hooks recebem um índice temporário em `GIT_INDEX_FILE`
+
+- **Data:** 2026-11-20
+- **Contexto:** review do Devin no PR #1, sobre `scripts/security/scan-secrets.sh`.
+- **Evidência:** com um token falso preparado só em `GIT_INDEX_FILE=.git/probe-index`, `scan-secrets.sh --staged` via Docker retornou `[PASS]`, porque o contêiner lia o índice padrão. Depois da correção, retornou `[FAIL]` com `File: leak-probe.txt`.
+- **Aprendizado:** em `git commit -a` e `git commit <caminhos>`, o Git define `GIT_INDEX_FILE` para os hooks. Ferramentas executadas em contêiner não herdam esse ambiente; repasse a variável com o caminho mapeado no volume.
+- **Destino:** `scripts/security/scan-secrets.sh` e caso em `scripts/harness-tests/harness.sh`
+- **Status:** Incorporada
+
+### LL-0015 — Arquivos pessoais declarados no `.gitignore` não são artefatos perdidos
+
+- **Data:** 2026-11-20
+- **Contexto:** review do Devin no PR #1, sobre a verificação 8 de `scripts/agents/check-config.sh`.
+- **Evidência:** com `.claude/settings.local.json` presente, o check retornou `[FAIL] Arquivo ignorado pelo .gitignore e não versionável: .claude/settings.local.json`, bloqueando `verify.sh` e o `pre-commit`.
+- **Aprendizado:** uma verificação de "arquivo ignorado por engano" precisa de uma lista explícita de exceções para os arquivos locais que o próprio projeto declara (`local_files` no check). Teste os dois lados: o arquivo pessoal passa e um script novo ignorado continua sendo detectado.
+- **Destino:** `scripts/agents/check-config.sh` e caso em `scripts/harness-tests/agent-config.sh`
+- **Status:** Incorporada

@@ -21,6 +21,12 @@ case "${1:-}" in
   *) echo "Uso: bash scripts/security/scan-secrets.sh [--staged]" >&2; exit 1 ;;
 esac
 
+# Em git commit -a ou git commit <caminhos>, o Git usa um índice temporário (GIT_INDEX_FILE).
+# A varredura precisa ler esse índice, não o padrão: torna o caminho absoluto antes do cd.
+if [[ -n "${GIT_INDEX_FILE:-}" && "${GIT_INDEX_FILE}" != /* && ! "${GIT_INDEX_FILE}" =~ ^[A-Za-z]: ]]; then
+  export GIT_INDEX_FILE="$(pwd -P)/${GIT_INDEX_FILE}"
+fi
+
 cd "${ROOT_DIR}"
 [[ -f "${CONFIG}" ]] || { echo "[FAIL] Segredos: ${CONFIG} não encontrado." >&2; exit 1; }
 
@@ -32,8 +38,19 @@ elif command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
   host_dir="${ROOT_DIR}"
   # Git Bash: o Docker Desktop precisa do caminho Windows (C:/...).
   if pwd -W >/dev/null 2>&1; then host_dir="$(pwd -W)"; fi
+  # O contêiner não herda o ambiente: o índice temporário é repassado com o caminho em /repo.
+  env_args=()
+  if [[ -n "${GIT_INDEX_FILE:-}" ]]; then
+    index="${GIT_INDEX_FILE}"
+    if command -v cygpath >/dev/null 2>&1; then index="$(cygpath -u "${index}")"; fi
+    case "${index}" in
+      "${ROOT_DIR}"/*) env_args=(-e "GIT_INDEX_FILE=/repo/${index#"${ROOT_DIR}"/}") ;;
+      *) echo "[FAIL] Segredos: índice ${GIT_INDEX_FILE} fora do repositório; varredura via Docker impossível." >&2
+         exit 1 ;;
+    esac
+  fi
   export MSYS_NO_PATHCONV=1
-  runner=(docker run --rm -v "${host_dir}:/repo" -w /repo "${IMAGE}")
+  runner=(docker run --rm "${env_args[@]}" -v "${host_dir}:/repo" -w /repo "${IMAGE}")
   repo='/repo'
 else
   echo "[SKIP] Segredos: gitleaks e Docker indisponíveis; varredura NOT RUN."

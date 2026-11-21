@@ -19,7 +19,7 @@ export PATH="${FIXTURE}/bin:${PATH}"
 
 cat > "${FIXTURE}/bin/docker" <<'BASH'
 #!/usr/bin/env bash
-echo docker >> "${FIXTURE_TRACE}"
+echo "docker $*" >> "${FIXTURE_TRACE}"
 exit "${MOCK_DOCKER_EXIT:-0}"
 BASH
 chmod +x "${FIXTURE}/bin/docker"
@@ -180,6 +180,14 @@ grep -q -- '--summary-export target/performance/smoke-summary.json' "${FIXTURE_T
 # Segredos: sem gitleaks e sem Docker é SKIP; achados e erros do gitleaks são FAIL.
 cp "${ROOT_DIR}/.gitleaks.toml" "${FIXTURE}/.gitleaks.toml"
 check 3 'gitleaks e Docker indisponíveis' security/scan-secrets.sh PATH=/usr/bin:/bin
+# Via Docker, o índice temporário de git commit -a / <caminhos> é repassado ao contêiner.
+check 0 '[PASS] Segredos' security/scan-secrets.sh "GIT_INDEX_FILE=${FIXTURE}/.git/next-index.lock" -- --staged
+grep -Fq -- '-e GIT_INDEX_FILE=/repo/.git/next-index.lock' "${FIXTURE_TRACE}"
+check 0 '[PASS] Segredos' security/scan-secrets.sh -- --staged
+if grep -Fq 'GIT_INDEX_FILE' "${FIXTURE_TRACE}"; then
+  echo '[FAIL] scan-secrets.sh repassou GIT_INDEX_FILE sem que o Git o definisse.' >&2; exit 1
+fi
+check 1 'fora do repositório' security/scan-secrets.sh GIT_INDEX_FILE=/outside/index -- --staged
 cat > "${FIXTURE}/bin/gitleaks" <<'BASH'
 #!/usr/bin/env bash
 echo "gitleaks $*" >> "${FIXTURE_TRACE}"
