@@ -80,6 +80,13 @@ printf 'trailing   \n' > "${repo}/file.txt"
 git -C "${repo}" add file.txt
 expect 1 'espaços em branco inválidos' commit 'docs: add file'
 git -C "${repo}" reset -q
+# Alteração em .github/ (gerido por DevOps): aviso visível, sem bloquear o commit.
+mkdir -p "${repo}/.github/workflows"
+printf 'name: ci
+' > "${repo}/.github/workflows/ci.yml"
+git -C "${repo}" add .github
+expect 0 'o commit altera .github/, gerido pelo time de DevOps' commit 'ci: add workflow'
+grep -Fq -- '- .github/workflows/ci.yml' "${WORK}/output"
 expect 0 'Hooks removidos' bash "${repo}/scripts/git/install-hooks.sh" --uninstall
 expect 0 '' commit 'wip without hooks'
 git -C "${repo}" config core.hooksPath other/hooks
