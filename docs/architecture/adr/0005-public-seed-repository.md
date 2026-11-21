@@ -21,8 +21,9 @@ A aplicação precisa ser simples (um comando, só o diretório do projeto) e di
 3. **Projeto autossuficiente:** as ferramentas do kit (exportador e seu teste) não vão para o projeto. Os documentos exportados não citam este repositório nem o seed, e o guia de quality gates traz os blocos de pom e as classes de teste já com o pacote do projeto.
 4. **Seções prontas para preencher:** PRD com responsável e obrigatoriedade por seção; `AGENTS.md` §1 (propósito) e §2 (stack detectada, persistência a completar); seção "Revisão neste projeto" nos ADRs 0001 a 0003, que entram como Proposta; licença no `CONTRIBUTING.md`. O `README.md` é do projeto e não é criado nem alterado. Os campos são `[PREENCHER-NEGÓCIO: ...]` ou `[PREENCHER-ENGENHARIA: ...]`, listados por `scripts/agents/list-pending.sh`. O `scripts/product/check-prd.sh` rejeita um PRD Aprovado com pendências.
 5. **`.github/`** não é exportado e não é alterado por agentes: regra no AGENTS.md, `deny` de `Edit`/`Write` no Claude Code (verificado pelo `check-config`) e item bloqueante na skill `code-review`.
-6. **Seed público** `java-ai-first-seed` é o **instalador**, não um template de projeto: `install.sh`, a biblioteca dele, o `payload/` de configuração com marcadores neutros e os `templates/` dos blocos de quality gates. É artefato derivado: só muda por regeneração (`export-kit.sh --seed`), que verifica a instalação num projeto de exemplo, publicada por pull request. Correções feitas direto no seed se perdem.
-7. O seed é publicado sob Apache-2.0, a licença deste repositório; projetos derivados escolhem a própria.
+6. **Seed público** `java-ai-first-seed` é o **instalador**, não um template de projeto: `install.sh`, a biblioteca dele, o `payload/` de configuração com marcadores neutros, os `templates/` dos blocos de quality gates, o `selftest.sh` e o `VERSION`. É artefato derivado: só muda por regeneração (`export-kit.sh --seed`), que roda o `selftest.sh` antes de gravar, publicada por pull request. Correções feitas direto no seed se perdem.
+7. **Versão e reinstalação:** o `VERSION` do kit (data e commit deste repositório) é gravado como `KIT_VERSION` no `.harness`. Reinstalar mostra a versão anterior e a nova, mescla o `.harness` preservando o `QUALITY_GATES` do projeto e, pelo `.kit-manifest` (hash de cada arquivo instalado), atualiza no lugar o que o projeto não alterou e grava como `<arquivo>.kit` a versão nova do que foi alterado.
+8. O seed é publicado sob Apache-2.0, a licença deste repositório; projetos derivados escolhem a própria.
 
 ## Alternativas consideradas
 
@@ -51,6 +52,8 @@ A aplicação precisa ser simples (um comando, só o diretório do projeto) e di
 - `bash scripts/harness-tests/export-kit.sh`: exporta só a configuração para um projeto com `app/`, `infra/` e `.github/` e verifica por hash que nada neles mudou, que as ferramentas do kit não foram copiadas, que não há referência a este repositório ou ao seed e que as seções prontas existem (AGENTS.md, README, ADRs, blocos de quality gates com o pacote do projeto). Grava o seed e instala por ele num segundo monorepo, verificando que o seed não muda e que nada do instalador vai para o projeto. Cobre também projeto sem README e entradas inválidas.
 - `bash scripts/harness-tests/harness.sh`: `APP_DIR=app`, gate não configurado como SKIP (`optional`) e FAIL (`required`), e `.harness` inválido.
 - `bash scripts/harness-tests/agent-config.sh`: PRD em elaboração aceito e Aprovado com pendências rejeitado; ausência do `deny` de `.github/`; `APP_DIR` diferente de `app` sem `REPOSITORY_ROLE=reference`.
+- `bash selftest.sh` no seed: instalação, `check-config` e harness no projeto, reinstalação com `.harness` preservado, sem rede, Maven nem Docker.
+- `bash scripts/harness-tests/linux.sh`: os testes acima num contêiner Linux.
 - Num monorepo real: instalação seguida de `bash scripts/verify.sh` com Docker antes de cada publicação do seed.
 
 ## Revisão da decisão

@@ -5,17 +5,19 @@
 #   APP_ROOT       caminho absoluto de APP_DIR
 #   QUALITY_GATES  required (gate não configurado no pom = FAIL) | optional (= SKIP)
 #   REPOSITORY_ROLE  project (padrão: pom sempre em app/) | reference (repositório de referência)
+#   KIT_VERSION    versão do kit AI-First aplicada (informativa; gravada pelo instalador)
 # Sem .harness: APP_DIR=., QUALITY_GATES=required, REPOSITORY_ROLE=project. Exige ROOT_DIR definido.
 APP_DIR=.
 QUALITY_GATES=required
 REPOSITORY_ROLE=project
+KIT_VERSION=
 if [[ -f "${ROOT_DIR}/.harness" ]]; then
   while IFS='=' read -r key value || [[ -n "${key}" ]]; do
     key="${key//[[:space:]]/}"
     case "${key}" in
       ''|'#'*) continue ;;
-      APP_DIR|QUALITY_GATES|REPOSITORY_ROLE) ;;
-      *) echo "[FAIL] .harness: chave desconhecida '${key}' (válidas: APP_DIR, QUALITY_GATES, REPOSITORY_ROLE)." >&2; return 1 ;;
+      APP_DIR|QUALITY_GATES|REPOSITORY_ROLE|KIT_VERSION) ;;
+      *) echo "[FAIL] .harness: chave desconhecida '${key}' (válidas: APP_DIR, QUALITY_GATES, REPOSITORY_ROLE, KIT_VERSION)." >&2; return 1 ;;
     esac
     # Comentário ao fim da linha e espaços nas bordas são descartados; espaço interno é inválido.
     value="${value%%#*}"

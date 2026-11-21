@@ -29,8 +29,9 @@ APP=app
 usage() { echo "Uso: bash install.sh <diretório do projeto>" >&2; exit 1; }
 (( $# == 1 )) || usage
 case "$1" in -*) usage ;; esac
-[[ -d "${PAYLOAD}" && -d "${TEMPLATES}" ]] || {
-  echo "[FAIL] Kit incompleto em ${KIT_DIR} (payload/ ou templates/ ausente)." >&2; exit 1; }
+[[ -d "${PAYLOAD}" && -d "${TEMPLATES}" && -s "${KIT_DIR}/VERSION" ]] || {
+  echo "[FAIL] Kit incompleto em ${KIT_DIR} (payload/, templates/ ou VERSION ausente)." >&2; exit 1; }
+KIT_VERSION="$(head -n 1 "${KIT_DIR}/VERSION" | tr -d '[:space:]')"
 [[ -d "$1" ]] || { echo "[FAIL] Diretório do projeto não encontrado: $1" >&2; exit 1; }
 DEST="$(cd -- "$1" && pwd -P)"
 case "${DEST}/" in
@@ -84,6 +85,13 @@ awk -v stack="${stack}" -v persistence="${persistence}" '
   /^- Spring JDBC com SQL explícito/ { print persistence; next }
   { print }' "${STAGE}/AGENTS.md" > "${STAGE}/AGENTS.md.tmp" && mv "${STAGE}/AGENTS.md.tmp" "${STAGE}/AGENTS.md"
 
+# 3b. Devcontainer com o Java do app (a feature aceita a versão principal, como "17").
+if [[ "${java_version}" =~ ^[0-9]+$ ]]; then
+  sed -i -e "/features\/java:/,/}/ s/\"version\": \"[^\"]*\"/\"version\": \"${java_version}\"/" \
+    -e "s/Java [0-9][0-9]* (Temurin, patch fixado; atualize deliberadamente)/Java ${java_version} (Temurin; versão do app\/pom.xml)/" \
+    "${STAGE}/.devcontainer/devcontainer.json"
+fi
+
 # 4. Guia de quality gates com os blocos prontos para o pacote e a classe do projeto.
 path="${package//.//}"
 adapt() { sed -e "s#${KIT_PACKAGE//./\\.}#${package}#g" -e "s#${KIT_PACKAGE//.//}#${path}#g" -e "s#${KIT_MAIN}#${main_class}#g"; }
@@ -119,16 +127,23 @@ deps='archunit|junit-platform-launcher|spring-boot-testcontainers|testcontainers
   printf '\n### 5. Ativar\n\nCom os blocos aplicados e `bash scripts/verify.sh` verde, troque `QUALITY_GATES=optional` por `QUALITY_GATES=required` no `.harness`.\n'
 } >> "${STAGE}/docs/how-to/enable-quality-gates.md"
 
-# 5. .harness do projeto: Maven em app/, gates opcionais até o app/pom.xml ser configurado.
+# 5. .harness do projeto: Maven em app/, gates opcionais até o app/pom.xml ser configurado. Numa
+#    reinstalação, o QUALITY_GATES escolhido pelo projeto é preservado e só a versão do kit muda.
+harness_value() { [[ -f "${DEST}/.harness" ]] && sed -n "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*\([^[:space:]#]*\).*/\1/p" "${DEST}/.harness" | tail -n 1; }
+previous_version="$(harness_value KIT_VERSION || true)"
+gates="$(harness_value QUALITY_GATES || true)"
+[[ "${gates}" == required ]] || gates=optional
 cat > "${STAGE}/.harness" <<EOF
 # Configuração do harness (scripts/lib/app.sh); chave=valor, sem execução de código.
 # APP_DIR: projeto Maven, sempre app/ (docs/architecture/repository-layout.md).
 # QUALITY_GATES: optional = gate não configurado em app/pom.xml é SKIP; required = FAIL.
-#   Para ativar, veja docs/how-to/enable-quality-gates.md.
+#   Para ativar, veja docs/how-to/enable-quality-gates.md ou bash scripts/quality/enable-gates.sh.
 # REPOSITORY_ROLE: project exige APP_DIR=app (verificado por scripts/agents/check-config.sh).
+# KIT_VERSION: versão do kit AI-First aplicada; o instalador a atualiza a cada reinstalação.
 APP_DIR=${APP}
-QUALITY_GATES=optional
+QUALITY_GATES=${gates}
 REPOSITORY_ROLE=project
+KIT_VERSION=${KIT_VERSION}
 EOF
 
 # 6. Só configuração: nada sob app/, infra/, tests/ ou .github/, e o README.md é do projeto.
@@ -156,14 +171,33 @@ if ! check_output="$(cd "${STAGE}" && bash scripts/agents/check-config.sh 2>&1)"
   exit 1
 fi
 
-# 8. Cópia sem sobrescrever: conflitos viram <arquivo>.kit.
-conflicts=() copied=0
+# 8. Cópia. O .kit-manifest registra o hash de cada arquivo que o kit instalou: numa atualização,
+#    arquivo ainda idêntico ao instalado é atualizado no lugar; arquivo alterado pelo projeto (ou
+#    sem registro) não é sobrescrito, e a versão nova fica ao lado como <arquivo>.kit. O .harness,
+#    já mesclado acima com os valores do projeto, é atualizado no lugar.
+MANIFEST=.kit-manifest
+declare -A installed=()
+if [[ -f "${DEST}/${MANIFEST}" ]]; then
+  while read -r hash path; do
+    [[ -n "${path}" && "${hash}" != '#'* ]] && installed["${path}"]="${hash}"
+  done < "${DEST}/${MANIFEST}"
+fi
+sha1() { sha1sum < "$1" | cut -d' ' -f1; }
+conflicts=() copied=0 refreshed=0 updated=0 manifest_lines=()
 while IFS= read -r -d '' file; do
   rel="${file#"${STAGE}"/}"
+  [[ "${rel}" != README.md ]] || continue
   target="${DEST}/${rel}"
   mkdir -p "$(dirname -- "${target}")"
-  if [[ -e "${target}" ]]; then
-    if ! cmp -s "${file}" "${target}"; then
+  [[ "${rel}" == .harness ]] || manifest_lines+=("$(sha1 "${file}") ${rel}")
+  if [[ "${rel}" == .harness && -e "${target}" ]]; then
+    cmp -s "${file}" "${target}" || { cp -p "${file}" "${target}"; updated=1; }
+  elif [[ -e "${target}" ]]; then
+    cmp -s "${file}" "${target}" && continue
+    if [[ -n "${installed[${rel}]:-}" && "${installed[${rel}]}" == "$(sha1 "${target}")" ]]; then
+      cp -p "${file}" "${target}"
+      refreshed=$((refreshed + 1))
+    else
       cp -p "${file}" "${target}.kit"
       conflicts+=("${rel}")
     fi
@@ -171,11 +205,21 @@ while IFS= read -r -d '' file; do
     cp -p "${file}" "${target}"
     copied=$((copied + 1))
   fi
-done < <(find "${STAGE}" -type f -print0)
+done < <(find "${STAGE}" -type f -print0 | sort -z)
+{
+  echo "# Arquivos instalados pelo kit AI-First ${KIT_VERSION} (sha1 e caminho). Não edite: o instalador"
+  echo "# usa este registro para atualizar só o que o projeto não alterou. Versione junto com o projeto."
+  printf '%s\n' "${manifest_lines[@]}"
+} > "${DEST}/${MANIFEST}"
 
-echo "[PASS] Configuração AI-First aplicada em ${DEST}: ${copied} arquivo(s) novo(s); check-config aprovado."
+echo "[PASS] Configuração AI-First aplicada em ${DEST}: ${copied} arquivo(s) novo(s), ${refreshed} atualizado(s); check-config aprovado."
+if [[ -n "${previous_version}" || "${updated}" == 1 ]]; then
+  echo "[INFO] Atualização do kit: ${previous_version:-versão não registrada} -> ${KIT_VERSION}; .harness atualizado com QUALITY_GATES=${gates} preservado."
+else
+  echo "[INFO] Kit ${KIT_VERSION} (registrado em .harness, KIT_VERSION)."
+fi
 if (( ${#conflicts[@]} > 0 )); then
-  echo "[AVISO] ${#conflicts[@]} arquivo(s) já existiam; a versão do kit está em <arquivo>.kit para mesclar:"
+  echo "[AVISO] ${#conflicts[@]} arquivo(s) alterado(s) no projeto (ou sem registro no .kit-manifest); a versão nova do kit está em <arquivo>.kit para mesclar:"
   printf '  - %s\n' "${conflicts[@]}"
 fi
 echo "[INFO] Detectado em ${APP}/: projeto \"${name}\"; classe ${main_class} em ${package}; Java ${java_version:-?}; Spring Boot ${boot_version:-?}; starters: ${starters:-nenhum}."

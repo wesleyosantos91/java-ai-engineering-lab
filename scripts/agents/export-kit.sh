@@ -77,6 +77,7 @@ include=(
   .agents .claude/settings.json .codex .devcontainer scripts
   .editorconfig .gitattributes .gitignore .gitleaks.toml
   docs/ai docs/engineering docs/how-to/run-tests.md docs/how-to/enable-quality-gates.md
+  docs/how-to/ci-integration.md
   docs/architecture/package-conventions.md docs/architecture/dependency-rules.md
   docs/architecture/repository-layout.md
   docs/architecture/adr/README.md docs/architecture/adr/TEMPLATE.md
@@ -133,11 +134,10 @@ done
 # 4. PRD inicial a partir do template.
 cp "${STAGE}/docs/product/TEMPLATE.md" "${STAGE}/docs/product/prd.md"
 
-# 5. AGENTS.md: propósito pronto para o negócio e tabela de scripts do projeto (sem o kit).
+# 5. AGENTS.md: propósito pronto para o negócio preencher.
 awk '
   /^\[PREENCHER: propósito do projeto\]\.?$/ {
     print "Propósito: [PREENCHER-NEGÓCIO: o que o sistema faz e para quem, em uma frase]. Requisitos: [PRD](docs/product/prd.md)."; next }
-  /^\| `agents\/`, `product\/` \|/ { print "| `agents/`, `product/` | `check-config.sh`, `sync-skills.sh`, `list-pending.sh`, hooks; `check-prd.sh` |"; next }
   { print }' "${STAGE}/AGENTS.md" > "${STAGE}/AGENTS.md.tmp" && mv "${STAGE}/AGENTS.md.tmp" "${STAGE}/AGENTS.md"
 
 # 6. Referências deste produto viram marcadores neutros (o instalador aplica os do projeto).
@@ -157,9 +157,14 @@ rename_literal "${KIT}/templates" "${old_package}" "${KIT_PACKAGE}"
 rename_literal "${KIT}/templates" "${old_path}" "${KIT_PACKAGE//.//}"
 rename_literal "${KIT}/templates" "${old_main}" "${KIT_MAIN}"
 
-# 8. Instalador.
+# 8. Instalador e versão do kit: data e commit deste repositório (com -dirty se houver alterações
+#    não commitadas), gravada no .harness do projeto e usada no relatório de atualização.
 cp "${SCRIPT_DIR}/kit/install.sh" "${KIT}/install.sh"
+cp "${SCRIPT_DIR}/kit/selftest.sh" "${KIT}/selftest.sh"
 cp "${SCRIPT_DIR}/kit/rename.sh" "${KIT}/lib/rename.sh"
+version="$(git -C "${ROOT_DIR}" log -1 --format='%cs.%h' 2>/dev/null || echo 'sem-git')"
+[[ -z "$(git -C "${ROOT_DIR}" status --porcelain 2>/dev/null)" ]] || version="${version}-dirty"
+printf '%s\n' "${version}" > "${KIT}/VERSION"
 
 # Nenhum resíduo deste produto no kit (o README do seed, escrito abaixo, cita a origem).
 residue="$(grep -rlIE "${old_package//./\\.}|${old_path}|${old_main}|Java AI Engineering Lab" "${KIT}" || true)"
@@ -173,17 +178,11 @@ if (( ! seed )); then
   exit
 fi
 
-# 9. Seed: o instalador público, verificado num projeto de exemplo antes de ser gravado.
-probe="$(mktemp -d)"
-trap 'rm -rf "${KIT}" "${probe}"' EXIT
-mkdir -p "${probe}/app/src/main/java/com/acme/probe"
-printf '<project>\n\t<parent>\n\t\t<version>4.1.2</version>\n\t</parent>\n\t<artifactId>probe</artifactId>\n\t<properties><java.version>27</java.version></properties>\n</project>\n' > "${probe}/app/pom.xml"
-printf 'package com.acme.probe;\n\n@SpringBootApplication\npublic class ProbeApplication {}\n' > "${probe}/app/src/main/java/com/acme/probe/ProbeApplication.java"
-if ! probe_output="$(bash "${KIT}/install.sh" "${probe}" 2>&1)"; then
-  printf '%s\n' "${probe_output}" >&2
-  echo "[FAIL] O instalador falhou no projeto de exemplo; seed não gravado." >&2; exit 1
+# 9. Seed: o instalador público, verificado pelo próprio autoteste antes de ser gravado.
+if ! selftest_output="$(HARNESS_LOCK_HELD= bash "${KIT}/selftest.sh" 2>&1)"; then
+  printf '%s\n' "${selftest_output}" >&2
+  echo "[FAIL] O autoteste do instalador falhou; seed não gravado." >&2; exit 1
 fi
-rm -rf "${probe}"
 [[ -f "${ROOT_DIR}/LICENSE" && -f "${ROOT_DIR}/NOTICE" ]] ||
   { echo "[FAIL] --seed exige LICENSE e NOTICE na raiz deste repositório." >&2; exit 1; }
 cp "${ROOT_DIR}/LICENSE" "${KIT}/LICENSE"
@@ -232,12 +231,20 @@ Nada deste repositório é copiado para o projeto: ele continua sem depender do 
 | Engenharia | Quality gates: blocos de pom e testes prontos no fim de `docs/how-to/enable-quality-gates.md` |
 
 ```bash
-bash scripts/agents/list-pending.sh   # o que falta preencher, por responsável
-bash scripts/git/install-hooks.sh     # hooks de commit (exige repositório Git)
-bash scripts/verify.sh                # agentes, build e testes do app/
+bash scripts/agents/list-pending.sh             # o que falta preencher, por responsável
+bash scripts/git/install-hooks.sh               # hooks de commit (exige repositório Git)
+bash scripts/verify.sh                          # agentes, build e testes do app/
+bash scripts/quality/enable-gates.sh --dry-run  # ativação dos quality gates (--apply com autorização)
+bash scripts/ci.sh                              # ponto de entrada para a CI do time de DevOps
 ```
 
 Até os quality gates serem configurados no `app/pom.xml`, eles aparecem como SKIP com o motivo, e o `verify.sh` termina PARCIAL. É o esperado.
+
+## Atualizar e verificar o instalador
+
+- **Atualizar um projeto:** rode o `install.sh` de novo, a partir de um clone atualizado. O `.harness` é mesclado (o `QUALITY_GATES` do projeto é preservado, e o `KIT_VERSION` passa a ser o do arquivo `VERSION`). Pelo `.kit-manifest`, arquivo ainda idêntico ao instalado é atualizado no lugar, e só o que o projeto alterou recebe a versão nova ao lado, como `<arquivo>.kit`. A saída mostra a versão anterior e a nova.
+- **Verificar o instalador:** `bash selftest.sh` instala num monorepo temporário e confere que só a configuração foi gravada, que ela passa no `check-config` e no harness do projeto e que a reinstalação preserva o `.harness`. Não usa rede, Maven nem Docker.
+- **Sistemas:** Linux e Windows com Git Bash. O macOS precisa das ferramentas GNU (`coreutils`, `gnu-sed`, `findutils`).
 
 ## Origem
 
@@ -249,5 +256,5 @@ Gerado pelo exportador do kit (`--seed`) do repositório de referência [java-ai
 EOF
 mkdir -p "${DEST}"
 cp -R "${KIT}/." "${DEST}/"
-echo "[PASS] Seed (instalador) gravado em ${DEST}; instalação verificada num projeto de exemplo."
+echo "[PASS] Seed (instalador) gravado em ${DEST}; autoteste aprovado (bash selftest.sh)."
 echo "[INFO] Uso: bash ${DEST}/install.sh <diretório do projeto>"

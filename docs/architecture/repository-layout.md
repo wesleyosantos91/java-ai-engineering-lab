@@ -8,7 +8,7 @@ A configuração AI-First fica na **raiz** e vale para o repositório inteiro: o
 |---|---|---|---|
 | Raiz: `AGENTS.md`, `CLAUDE.md`, `.agents/`, `.claude/`, `.codex/` | Instruções, skills e adaptadores de provider | Agentes de IA | Só com autorização, seguindo a skill `skill-authoring` e o `check-config` |
 | `docs/` | PRD, ADRs, specs de feature e guias | Pessoas e agentes | Sim, conforme a skill `project-documentation`; PRD aprovado e ADR aceito não |
-| `scripts/` e `.harness` | Harness local e configuração dele | Pessoas, agentes e hooks Git | Só com autorização; nunca para obter aprovação artificial |
+| `scripts/`, `.harness` e `.kit-manifest` | Harness local, configuração dele e registro do que o kit instalou | Pessoas, agentes e hooks Git | Só com autorização; nunca para obter aprovação artificial |
 | `app/` | Projeto Maven (`app/pom.xml`, `app/src/`); o harness o localiza por `APP_DIR` no `.harness` | Maven, harness e pipelines | Sim, dentro do escopo autorizado |
 | `infra/` | Infraestrutura como código, compose e configuração de ambiente | Pipelines e time de plataforma | Só dentro do escopo autorizado (AGENTS.md, seção 8) |
 | `tests/` | Testes fora do app (por exemplo, `tests/performance/k6/`) | Harness e pipelines | Sim, dentro do escopo autorizado |

@@ -17,7 +17,7 @@ Depois da instalação, a raiz recebe `AGENTS.md`, `CLAUDE.md`, `.agents/`, `.cl
 
 ## Pré-requisitos
 
-- Bash (Git Bash no Windows), Git e Docker. Opcionais: k6 e gitleaks (sem gitleaks, a varredura usa Docker).
+- Bash com ferramentas GNU: Linux ou Windows com Git Bash (macOS precisa de `coreutils`, `gnu-sed` e `findutils`). Git e Docker. Opcionais: k6 e gitleaks (sem gitleaks, a varredura usa Docker).
 - O `app/` com `pom.xml`, Maven Wrapper (`app/mvnw`) e uma classe `@SpringBootApplication`.
 
 ## Instalar: um comando, só o diretório
@@ -59,8 +59,8 @@ bash scripts/product/check-prd.sh     # PRD
 |---|---|
 | Negócio | PRD em `docs/product/prd.md` (cada seção diz quem preenche e se é obrigatória) e propósito no `AGENTS.md` §1 |
 | Engenharia | Seção "Revisão neste projeto" dos ADRs 0001 a 0003 (Aceita, Rejeitada ou Substituída) e atualização do índice; persistência no `AGENTS.md` §2; licença no `CONTRIBUTING.md` |
-| Engenharia | Quality gates: copiar os blocos prontos do fim de `docs/how-to/enable-quality-gates.md` para o `app/pom.xml` e `app/src/test/java`, e trocar para `QUALITY_GATES=required` no `.harness`. É mudança no app e exige autorização |
-| DevOps | `.github/` continua com o time. O `.claude/settings.json` nega aos agentes a edição de `.github/**` |
+| Engenharia | Quality gates: `bash scripts/quality/enable-gates.sh --dry-run` mostra o que muda; `--apply` aplica os blocos prontos de `docs/how-to/enable-quality-gates.md` no `app/pom.xml` e em `app/src/test/java` e troca para `QUALITY_GATES=required`. É mudança no app e exige autorização |
+| DevOps | `.github/` continua com o time: o workflow só chama `bash scripts/ci.sh`, que grava um resumo JSON ([integração à CI](ci-integration.md), com exemplo de workflow e a recomendação de CODEOWNERS e proteção de branch). O `.claude/settings.json` nega aos agentes a edição de `.github/**`, e o `pre-commit` avisa quando um commit altera `.github/` |
 
 Ative e verifique:
 
@@ -74,9 +74,13 @@ bash scripts/verify.sh                   # fluxo padrão, com o Maven em app/
 
 Com gates opcionais ou sem código de negócio, o `verify.sh` termina PARCIAL. **Isso é esperado:** a ativação dos gates e a primeira feature tiram o fluxo desse estado. Providers: no Codex, marque o projeto como confiável para carregar `.codex/`; no Claude Code, confira com `/skills` que as skills aparecem; o Devin lê `AGENTS.md` e `.agents/skills/` sem configuração extra. Primeira feature: skill `requirements-discovery` ou `spec-driven-development`, depois `feature-delivery`.
 
+## Atualizar um projeto
+
+Rode o instalador de novo, a partir de um clone atualizado do seed (ou de `export-kit.sh` aqui). A saída mostra a versão anterior e a nova (`KIT_VERSION` no `.harness`). O `.harness` é mesclado, preservando o `QUALITY_GATES` do projeto. O `.kit-manifest` (versionado na raiz) registra o hash de cada arquivo que o kit instalou: arquivo ainda idêntico ao instalado é **atualizado no lugar**; só os arquivos que o projeto alterou recebem a versão nova ao lado, como `<arquivo>.kit`, para mesclar. A saída informa quantos arquivos foram atualizados e quais viraram `.kit`. `app/`, `infra/`, `tests/`, `.github/` e `README.md` continuam intocados.
+
 ## Manter o seed
 
-O seed só muda por regeneração a partir deste repositório: `bash scripts/agents/export-kit.sh --seed <diretório-vazio>`, que verifica a instalação num projeto de exemplo antes de gravar, e a publicação da diferença no repositório do seed por pull request. Correções feitas direto no seed se perdem na próxima geração.
+O seed só muda por regeneração a partir deste repositório: `bash scripts/agents/export-kit.sh --seed <diretório-vazio>`, que roda o autoteste do seed (`selftest.sh`) antes de gravar, e a publicação da diferença no repositório do seed por pull request. O arquivo `VERSION` do seed (data e commit deste repositório) é o `KIT_VERSION` gravado nos projetos. Correções feitas direto no seed se perdem na próxima geração.
 
 O que vai para o projeto sai deste repositório. Trechos que só valem aqui são tratados por marcadores invisíveis nos Markdown: `<!-- kit:omit-line -->`, `<!-- kit:replace-line: TEXTO -->` e `<!-- kit:omit-start -->`…`<!-- kit:omit-end -->`, validados pelo `check-config.sh`. Ao escrever aqui um trecho que só vale para este produto, marque-o. O teste `bash scripts/harness-tests/export-kit.sh` aplica o kit num monorepo de exemplo (`app/`, `infra/` com Terraform, `tests/`, `.github/`, README), pelos dois caminhos, e confere por hash que nada do projeto mudou.
 

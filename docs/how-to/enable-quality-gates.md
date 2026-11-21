@@ -16,6 +16,8 @@ Este guia descreve o que adicionar para que JaCoCo, PIT e ArchUnit executem de f
 
 ## Passos
 
+Com os blocos prontos gerados pelo instalador, `bash scripts/quality/enable-gates.sh --dry-run` mostra o que mudaria e `--apply` executa os passos 1 a 4 e 6 (exige `app/` e `.harness` commitados, para revisar e desfazer). Sem banco no app, ele usa o teste de contexto sem Testcontainers e omite essas dependências. Os passos abaixo descrevem o mesmo trabalho feito à mão.
+
 1. **Propriedades** em `<properties>`: `app.basePackage`, `app.basePath` e `app.mainClass` (pacote e classe `@SpringBootApplication` do app), `skipUnitTests` (`false`), `argLine` vazia e as versões de JaCoCo, PIT e ArchUnit.
 2. **Plugins:** `maven-dependency-plugin` (execução `resolve-test-agent`, para o agent do Mockito), Surefire (`default-test` e `architecture`), Failsafe, JaCoCo e PIT, com as metas LINE ≥ 90%, BRANCH ≥ 90% e mutation score ≥ 90%.
 3. **Dependências de teste:** ArchUnit, Testcontainers (PostgreSQL) e `junit-platform-launcher`.

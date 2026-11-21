@@ -16,6 +16,8 @@ mkdir -p "${ROOT_DIR}/target"
 WORK="$(mktemp -d "${ROOT_DIR}/target/export-kit-check.XXXXXX")"
 cleanup() { chmod -R u+w "${WORK}" 2>/dev/null || true; rm -rf "${WORK}"; }
 trap cleanup EXIT
+source "${ROOT_DIR}/scripts/lib/lock.sh"
+acquire_harness_lock || exit 1
 
 expect() {
   local expected="$1" message="$2" code=0
@@ -92,13 +94,16 @@ check_installed() {
   assert grep -qx 'APP_DIR=app' "${dest}/.harness"
   assert grep -qx 'QUALITY_GATES=optional' "${dest}/.harness"
   assert grep -qx 'REPOSITORY_ROLE=project' "${dest}/.harness"
+  assert grep -q ' AGENTS.md$' "${dest}/.kit-manifest"
+  if grep -qE ' (README.md|.harness)$' "${dest}/.kit-manifest"; then echo '[FAIL] manifest registra arquivo do projeto ou o .harness' >&2; exit 1; fi
   # Seções prontas, com os valores detectados.
   assert grep -q '^# AGENTS.md — Orders Service' "${dest}/AGENTS.md"
   assert grep -qF -- '- Java 17, Spring Boot 4.2.0, Maven via Wrapper em `app/` (detectado em `app/pom.xml`; starters: webmvc).' "${dest}/AGENTS.md"
   assert grep -q '^Propósito: \[PREENCHER-NEGÓCIO:' "${dest}/AGENTS.md"
   assert grep -q '^- Persistência e integração: \[PREENCHER-ENGENHARIA:' "${dest}/AGENTS.md"
   assert grep -q '^- Package base `com.acme.orders`' "${dest}/AGENTS.md"
-  assert grep -qF '`list-pending.sh`, hooks; `check-prd.sh`' "${dest}/AGENTS.md"
+  assert grep -qF '| `agents/` | `check-config.sh`, `sync-skills.sh`, `list-pending.sh` e hooks do Claude |' "${dest}/docs/how-to/run-tests.md"
+  assert grep -qF '`ci.sh` (CI)' "${dest}/AGENTS.md"
   assert grep -qF '| Navegação geral | [README.md](README.md) |' "${dest}/AGENTS.md"
   assert grep -q 'com.acme.orders' "${dest}/.agents/skills/architecture-guard/SKILL.md"
   assert grep -q '"name": "orders-service"' "${dest}/.devcontainer/devcontainer.json"
@@ -138,11 +143,40 @@ grep -Fq 'projeto "Orders Service"; classe OrdersApplication em com.acme.orders;
 grep -Fq 'Nada foi gravado em app/, infra/, tests/, .github/ nem no README.md.' "${WORK}/output"
 check_installed "${dest}" "${before}"
 
-# Reaplicação: nada muda no projeto; configuração alterada localmente recebe a versão do kit em .kit.
+grep -qx 'KIT_VERSION=[0-9-]*\.[0-9a-f]*\(-dirty\)\?' "${dest}/.harness"
+assert grep -q '"version": "17"' "${dest}/.devcontainer/devcontainer.json"
+
+# Ativação dos quality gates no app pelos blocos prontos (app sem banco: teste de contexto).
+git -C "${dest}" -c user.name=harness -c user.email=harness@example.invalid commit -qm 'chore: kit' --no-verify
+expect 0 'sem banco: teste de contexto' bash "${dest}/scripts/quality/enable-gates.sh" --dry-run
+grep -Fq 'criar app/src/test/java/com/acme/orders/architecture/ArchitectureTest.java' "${WORK}/output"
+grep -Fq 'OrdersApplicationTests.java' "${WORK}/output"
+assert test ! -e "${dest}/app/src/test/java/com/acme/orders/architecture"
+expect 1 'Uso:' bash "${dest}/scripts/quality/enable-gates.sh"
+printf '\n' >> "${dest}/app/pom.xml"
+expect 1 'com alterações não commitadas' bash "${dest}/scripts/quality/enable-gates.sh" --apply
+git -C "${dest}" checkout -q -- app/pom.xml
+expect 0 '[PASS] Quality gates aplicados' bash "${dest}/scripts/quality/enable-gates.sh" --apply
+assert grep -q '<id>coverage-check</id>' "${dest}/app/pom.xml"
+assert grep -q '<app.mainClass>OrdersApplication</app.mainClass>' "${dest}/app/pom.xml"
+if grep -q 'testcontainers' "${dest}/app/pom.xml"; then echo '[FAIL] Testcontainers num app sem banco' >&2; exit 1; fi
+assert grep -q '^package com.acme.orders.architecture;' "${dest}/app/src/test/java/com/acme/orders/architecture/ArchitectureTest.java"
+assert grep -q '@SpringBootTest' "${dest}/app/src/test/java/com/acme/orders/OrdersApplicationIT.java"
+assert grep -qx 'QUALITY_GATES=required' "${dest}/.harness"
+expect 0 'Quality gates já configurados' bash "${dest}/scripts/quality/enable-gates.sh" --apply
+git -C "${dest}" checkout -q -- app .harness && git -C "${dest}" clean -qfd app/src/test
+before="$(project_hash "${dest}")"
+
+# Reaplicação: nada muda no projeto; configuração alterada localmente recebe a versão do kit em
+# .kit; o .harness é mesclado (QUALITY_GATES do projeto preservado) e a atualização é informada.
+sed -i 's/^QUALITY_GATES=optional$/QUALITY_GATES=required/' "${dest}/.harness"
 printf '\nAjuste local.\n' >> "${dest}/SECURITY.md"
 expect 0 'SECURITY.md' bash "${EXPORT}" "${dest}"
 assert test -f "${dest}/SECURITY.md.kit"
 assert test "$(project_hash "${dest}")" == "${before}"
+grep -Fq "Atualização do kit:" "${WORK}/output"
+assert grep -qx 'QUALITY_GATES=required' "${dest}/.harness"
+assert test ! -e "${dest}/.harness.kit"
 
 # Sem README no projeto: o AGENTS.md não aponta para um arquivo que não existe.
 bare="${WORK}/sem readme"
@@ -167,6 +201,10 @@ expect 1 'dentro deste repositório' bash "${EXPORT}" "${ROOT_DIR}/docs"
 # 2. Seed: instalador público com a mesma configuração, sem nada deste produto.
 seed="${WORK}/seed"
 expect 0 '[PASS] Seed (instalador) gravado' bash "${EXPORT}" --seed "${seed}"
+grep -Fq 'autoteste aprovado' "${WORK}/output"
+assert test -x "${seed}/selftest.sh"
+assert test -s "${seed}/VERSION"
+expect 0 'Autoteste do instalador concluído' bash "${seed}/selftest.sh"
 assert test -x "${seed}/install.sh"
 assert test -f "${seed}/lib/rename.sh"
 assert test -f "${seed}/payload/AGENTS.md"
