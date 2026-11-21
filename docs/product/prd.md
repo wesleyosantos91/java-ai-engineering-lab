@@ -1,17 +1,17 @@
 # PRD-001 — Product Catalog API
 
 **Projeto:** Java AI Engineering Lab\
-**Versão do documento:** 1.0\
-**Status:** Aprovado\
+**Versão do documento:** 1.1\
+**Status:** Em revisão — aguardando aprovação (versão aprovada vigente: 1.0)\
 **Responsável pela aprovação:** Wesley Oliveira Santos
 
 ## 1. Contexto
 
-O Java AI Engineering Lab é um laboratório para estudar engenharia de software com Java 27, Spring Boot 4 e agentes de inteligência artificial.
+O Java AI Engineering Lab é um repositório de referência de como configurar um projeto Java 27 e Spring Boot 4 para desenvolvimento AI-First com boas práticas: context engineering, harness engineering, PRD, ADRs e agentes de IA multi-provider ([ADR-0004](../architecture/adr/0004-ai-first-reference-repository.md)).
 
-A Product Catalog API será utilizada como caso de estudo para implementar, testar e comparar abordagens AI-Assisted e AI-First.
+A Product Catalog API é a aplicação-exemplo que demonstra essas práticas: ela é implementada, testada e revisada com agentes de IA sob as regras do repositório.
 
-O foco é construir uma funcionalidade suficientemente simples para permitir experimentos reproduzíveis, mas com regras que permitam avaliar qualidade de código, integridade de dados, arquitetura e tratamento de falhas.
+O foco é uma funcionalidade suficientemente simples para ser compreendida rapidamente, mas com regras que exercitem qualidade de código, integridade de dados, arquitetura e tratamento de falhas.
 
 ## 2. Objetivos
 
@@ -20,7 +20,6 @@ O foco é construir uma funcionalidade suficientemente simples para permitir exp
 - Garantir integridade e unicidade dos registros.
 - Definir contratos de entrada e saída consistentes.
 - Permitir avaliação funcional independente da implementação.
-- Utilizar os mesmos requisitos nos experimentos comparativos.
 
 ## 3. Escopo funcional
 
@@ -372,20 +371,19 @@ reproduzível.
 - Idempotency keys para requisições HTTP.
 - Deploy em produção.
 
-Esses recursos poderão integrar experimentos futuros.
+Esses recursos poderão integrar evoluções futuras, mediante nova versão deste PRD.
 
-## 11. Regras para experimentação com IA
+## 11. Regras para desenvolvimento com IA
 
-- Versionar e aprovar este PRD antes das execuções.
-- Utilizar requisitos equivalentes nos grupos comparados.
-- Partir do mesmo baseline técnico.
-- Congelar as versões de requisitos utilizadas.
-- Não expor os testes de avaliação independente
-  aos agentes antes da conclusão dos experimentos.
-- Não permitir alterações unilaterais nos critérios
-  de aceitação.
-- Registrar separadamente sucesso, qualidade,
-  tempo, tokens, custo e intervenção humana.
+- Versionar e aprovar este PRD antes da implementação.
+- Implementar somente requisitos aprovados e
+  especificados no catálogo de features.
+- Não permitir que agentes alterem critérios
+  de aceitação ou este PRD unilateralmente.
+- Comprovar cada critério de aceitação com
+  evidência verificável produzida pelo harness.
+- Exigir revisão humana para aprovar escopo,
+  decisões arquiteturais e conclusão de features.
 
 ## 12. Critério de conclusão do produto
 
@@ -402,10 +400,18 @@ ser declarados pendentes, nunca aprovados.
 
 ## 13. Aprovação do contrato
 
-**Status:** Aprovado — versão 1.0.
+**Status:** versão 1.0 aprovada; versão 1.1 em revisão,
+aguardando aprovação de Wesley Oliveira Santos.
 
-Os requisitos, cenários e regras desta versão
-constituem o contrato aprovado para os experimentos.
+Os requisitos, cenários e regras da versão aprovada
+constituem o contrato da aplicação-exemplo.
 
 Mudanças posteriores deverão gerar uma nova versão
-do PRD e ser consideradas no protocolo experimental.
+do PRD, registrada no histórico abaixo.
+
+### Histórico de versões
+
+| Versão | Status | Alterações |
+|---|---|---|
+| 1.0 | Aprovada | Versão inicial: contrato da Product Catalog API para experimentos AI-Assisted e AI-First |
+| 1.1 | Em revisão | Novo propósito do repositório, como referência AI-First ([ADR-0004](../architecture/adr/0004-ai-first-reference-repository.md)). Reescritas as seções 1, 2, 10, 11 e 13. Requisitos funcionais, contrato HTTP e critérios BDD (seções 3 a 9 e 12) inalterados |
