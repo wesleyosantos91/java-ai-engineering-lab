@@ -154,4 +154,13 @@ Entradas não são reescritas. Se um aprendizado se mostrar errado, mude o statu
 - **Aprendizado:** uma verificação de "arquivo ignorado por engano" precisa de uma lista explícita de exceções para os arquivos locais que o próprio projeto declara (`local_files` no check). Teste os dois lados: o arquivo pessoal passa e um script novo ignorado continua sendo detectado.
 - **Destino:** `scripts/agents/check-config.sh` e caso em `scripts/harness-tests/agent-config.sh`
 - **Status:** Incorporada
+
+### LL-0016 — Saída de `ls` não serve de lista de exclusão para apagar
+
+- **Data:** 2026-11-21
+- **Contexto:** limpeza de um projeto de teste para reaplicar o kit, com `ls -A | grep -vx -e app -e infra` alimentando `rm -rf`.
+- **Evidência:** no Git Bash deste ambiente, `ls -A` mostra diretórios com barra final (`app/`); o filtro não protegeu nada, e `app/` e `infra/` foram apagados. A recuperação regenerou o projeto pelo Spring Initializr com os mesmos parâmetros, e os 10 arquivos conferiram com os SHA-1 registrados antes da limpeza.
+- **Aprendizado:** para apagar, enumere os alvos por caminho explícito (ou `find -mindepth 1 -maxdepth 1 ! -name ...`), mostre a lista antes de executar e registre hashes do que precisa sobreviver. A formatação do `ls` depende do perfil do shell.
+- **Destino:** este registro (a regra geral de conferir o alvo antes de apagar já vale para os agentes)
+- **Status:** Registrada
 <!-- kit:omit-end -->

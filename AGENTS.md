@@ -1,6 +1,6 @@
 # AGENTS.md — Java AI Engineering Lab
 
-Fonte canônica de instruções para agentes de IA (Codex, Claude Code, Devin e outros); arquivos de provider são apenas adaptadores ([ADR-0002](docs/architecture/adr/0002-multi-provider-agent-context.md)). Carregado em toda sessão: mantenha-o enxuto e mova detalhes para documentos sob demanda.
+Fonte canônica de instruções para agentes de IA (Codex, Claude Code, Devin e outros); arquivos de provider são adaptadores ([ADR-0002](docs/architecture/adr/0002-multi-provider-agent-context.md)). Carregado em toda sessão: mantenha-o enxuto; detalhes vão para documentos sob demanda.
 
 ## 1. Propósito
 
@@ -35,7 +35,7 @@ Specs de feature: `docs/features/FEAT-XXXX-*/spec.md`; o catálogo lista as exis
 
 ### Skills
 
-Skills canônicas: `.agents/skills/<nome>/SKILL.md`, carregadas sob demanda, inclusive `references/`. Fluxo ordinário: descoberta → especificação → planejamento → TDD → execução → simplificação → verificação → revisão → entrega. Skills detalham procedimentos e não substituem PRD, ADRs ou DoD. Consultar uma skill não autoriza modificar contratos, realizar commits ou publicar alterações. Se uma skill não existir, reporte e use as regras documentais disponíveis.
+Skills canônicas: `.agents/skills/<nome>/SKILL.md` (e `references/`), carregadas sob demanda. Fluxo: descoberta → especificação → planejamento → TDD → execução → simplificação → verificação → revisão → entrega. Skills detalham procedimentos: não substituem PRD, ADRs ou DoD nem autorizam alterar contratos, commitar ou publicar. Skill inexistente: reporte e siga as regras documentais.
 
 | Etapa | Skill | Quando usar |
 |---|---|---|
