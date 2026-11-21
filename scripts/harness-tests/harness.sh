@@ -3,10 +3,13 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 ROOT_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd -P)"
+source "${ROOT_DIR}/scripts/lib/lock.sh"
+acquire_harness_lock || exit 1
 mkdir -p "${ROOT_DIR}/target"
 FIXTURE="$(mktemp -d "${ROOT_DIR}/target/harness-check.XXXXXX")/fixture with spaces"
 mkdir -p "${FIXTURE}/bin" "${FIXTURE}/src/test/java"
 cp -R "${ROOT_DIR}/scripts" "${FIXTURE}/scripts"
+cp "${ROOT_DIR}/.gitleaks.toml" "${FIXTURE}/.gitleaks.toml"
 # pom.xml mínimo: as propriedades de pacote (lib/pom.sh) e os marcadores dos gates configurados
 # (lib/app.sh: sem eles, o gate é "não configurado").
 cat > "${FIXTURE}/pom.xml" <<'XML'
@@ -115,6 +118,24 @@ check 3 'execução incompleta' test/integration.sh MOCK_REPORT=partial
 check 1 'integração NOT RUN' test/integration.sh MOCK_DOCKER_EXIT=1
 
 check 0 'Agentes=PASS; Build=PASS; Unitários=PASS; Arquitetura=SKIP; Integração=PASS' verify.sh
+# Resumo JSON do verify.sh e ponto de entrada da CI (scripts/ci.sh).
+summary="${FIXTURE}/target/harness/verify-summary.json"
+grep -q '"result": "PARCIAL"' "${summary}"
+grep -q '"unit": "PASS"' "${summary}"
+grep -q '"architecture": "SKIP"' "${summary}"
+grep -q '"target/surefire-reports"' "${summary}"
+check 0 '[PARCIAL] CI: há etapas SKIP ou NOT RUN' ci.sh
+ci_summary="${FIXTURE}/target/harness/ci-summary.json"
+grep -q '"mutation": "SKIP"' "${ci_summary}"
+grep -q '"secrets": "PASS"' "${ci_summary}"
+check 0 'Mutação: NOT RUN (CI_MUTATION=0)' ci.sh CI_MUTATION=0 CI_SECRETS=0
+grep -q '"secrets": "NOT RUN"' "${ci_summary}"
+check 1 'resultado PARCIAL com CI_REQUIRE_COMPLETE=1' ci.sh CI_MUTATION=0 CI_REQUIRE_COMPLETE=1
+check 1 '[FAIL] CI: há etapas reprovadas' ci.sh MOCK_BUILD_EXIT=7
+grep -q '"build": "FAIL"' "${ci_summary}"
+grep -q '"result": "FAIL"' "${ci_summary}"
+grep -q '"mutation": "NOT RUN"' "${ci_summary}"
+check 1 'CI_MUTATION deve ser 0 ou 1' ci.sh CI_MUTATION=talvez
 check 7 'Build=FAIL; Unitários=NOT RUN; Arquitetura=NOT RUN; Integração=NOT RUN' verify.sh MOCK_BUILD_EXIT=7
 check 1 'Agentes=FAIL; Build=NOT RUN; Unitários=NOT RUN' verify.sh MOCK_AGENTS_EXIT=1
 if grep -q 'mvn' "${FIXTURE_TRACE}"; then
@@ -260,5 +281,19 @@ check 1 "chave desconhecida 'COMANDO'" verify.sh
 test ! -e "${FIXTURE}/pwned" && test ! -e "${FIXTURE}/bin/pwned"
 harness 'APP_DIR=app' 'QUALITY_GATES=talvez'
 check 1 "QUALITY_GATES 'talvez' inválido" quality/coverage.sh
+
+# Trava: com outra execução viva no mesmo repositório, o harness recusa; a trava de um processo
+# encerrado é tomada, e a trava é liberada ao sair. (A cópia não é repositório Git: trava em TMPDIR.)
+harness 'APP_DIR=app'
+lockdir="${TMPDIR:-/tmp}/harness-$(printf '%s' "${FIXTURE}" | cksum | cut -d' ' -f1).lock"
+sleep 60 & holder=$!
+mkdir -p "${lockdir}" && echo "${holder}" > "${lockdir}/pid"
+check 1 'Outra execução do harness está em andamento' build/compile.sh HARNESS_LOCK_HELD=
+check 1 'Outra execução do harness está em andamento' verify.sh HARNESS_LOCK_HELD=
+grep -Fq 'Agentes=NOT RUN' "${FIXTURE}/output"
+kill "${holder}"; wait "${holder}" 2>/dev/null || true
+check 0 '[OK] Compilação concluída.' build/compile.sh HARNESS_LOCK_HELD=
+test ! -e "${lockdir}"
+check 0 '[OK] Compilação concluída.' build/compile.sh HARNESS_LOCK_HELD= HARNESS_LOCK_DISABLE=1
 
 echo "[PASS] Contratos do harness verificados com Maven/Docker simulados. Fixtures: ${FIXTURE}"

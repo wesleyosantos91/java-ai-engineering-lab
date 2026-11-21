@@ -21,3 +21,12 @@ case "${code}" in
   0|3) ;;
   *) echo "[FAIL] pre-commit: varredura de segredos reprovou o commit." >&2; exit 1 ;;
 esac
+
+# .github/ é gerido pelo time de DevOps (AGENTS.md, seção 8). O hook não bloqueia, porque o próprio
+# time faz commits nesse diretório, mas deixa a alteração visível para quem (pessoa ou agente) commita.
+github_changes="$(git -C "${ROOT_DIR}" diff --cached --name-only -- .github | head -n 5)"
+if [[ -n "${github_changes}" ]]; then
+  echo "[AVISO] pre-commit: o commit altera .github/, gerido pelo time de DevOps (AGENTS.md, seção 8):" >&2
+  printf '  - %s\n' ${github_changes} >&2
+  echo "        Agentes não alteram .github/; confirme que a mudança é do time responsável." >&2
+fi

@@ -218,7 +218,7 @@ if [[ "$(git rev-parse --is-inside-work-tree 2>/dev/null)" == true && -z "$(git 
   # não são artefatos compartilhados perdidos; somente eles ficam fora desta verificação.
   local_files=(.claude/settings.local.json)
   ignored="$({ find scripts tests/performance .agents .claude .codex .github .devcontainer -type f 2>/dev/null
-    printf '%s\n' AGENTS.md CLAUDE.md SECURITY.md .gitleaks.toml .editorconfig .harness; } |
+    printf '%s\n' AGENTS.md CLAUDE.md SECURITY.md .gitleaks.toml .editorconfig .harness .kit-manifest; } |
     { grep -vxF -f <(printf '%s\n' "${local_files[@]}") || true; } |
     git check-ignore --stdin 2>/dev/null || true)"
   if [[ -n "${ignored}" ]]; then

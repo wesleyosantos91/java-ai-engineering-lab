@@ -9,6 +9,8 @@ mkdir -p "${ROOT_DIR}/target"
 FIXTURE="$(mktemp -d "${ROOT_DIR}/target/quality-gates.XXXXXX")/project with spaces"
 mkdir -p "${FIXTURE}"
 source "${ROOT_DIR}/scripts/lib/app.sh" || exit 1
+source "${ROOT_DIR}/scripts/lib/lock.sh"
+acquire_harness_lock || exit 1
 # A cópia usa o layout com o pom na raiz (sem .harness), qualquer que seja o APP_DIR de origem.
 cp "${APP_ROOT}/pom.xml" "${APP_ROOT}/mvnw" "${FIXTURE}/"
 cp -R "${APP_ROOT}/.mvn" "${APP_ROOT}/src" "${ROOT_DIR}/scripts" "${FIXTURE}/"

@@ -48,7 +48,7 @@ Os arquivos de provider **reforçam** as regras do `AGENTS.md`, sem substituí-l
 
 Arquivos locais e pessoais, fora do versionamento: `CLAUDE.local.md`, `AGENTS.local.md` e `.claude/settings.local.json`.
 
-Proteção de `.github/` (gerido por DevOps; AGENTS.md, seção 8): o Claude Code a aplica com `deny` de `Edit`/`Write` em `.github/**`, verificado pelo `check-config.sh`. As regras do Codex (`execpolicy`) controlam comandos, não caminhos de arquivo, e o Devin não tem adaptador: nos dois vale a regra do AGENTS.md e o item bloqueante da skill `code-review`. Não há bloqueio no Git, porque o time de DevOps faz commits nesse diretório.
+Proteção de `.github/` (gerido por DevOps; AGENTS.md, seção 8): o Claude Code a aplica com `deny` de `Edit`/`Write` em `.github/**`, verificado pelo `check-config.sh`. As regras do Codex (`execpolicy`) controlam comandos, não caminhos de arquivo, e o Devin não tem adaptador: nos dois vale a regra do AGENTS.md e o item bloqueante da skill `code-review`. Não há bloqueio no Git, porque o time de DevOps faz commits nesse diretório: o `pre-commit` só avisa quando o commit altera `.github/`. A proteção para todos os providers é o CODEOWNERS e a proteção de branch, recomendados em [integração à CI](../how-to/ci-integration.md).
 
 ## Agentes em nuvem e ambiente reproduzível
 

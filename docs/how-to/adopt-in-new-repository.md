@@ -1,96 +1,88 @@
-# Aplicar esta configuração AI-First em outro repositório
+# Aplicar a configuração AI-First num monorepo existente
 
-Guia para levar a configuração AI-First deste repositório (instruções e skills dos agentes, harness, PRD guiado, ADRs) a outro projeto. Tudo parte do exportador `scripts/agents/export-kit.sh`, que copia só o que é reutilizável, remove o que é específico deste produto e verifica o resultado antes de gravar. O seed público é a mesma exportação com um app mínimo, publicada como template ([ADR-0005](../architecture/adr/0005-public-seed-repository.md)).
+O kit leva a configuração AI-First deste repositório (instruções e skills dos agentes, harness, PRD guiado, ADRs propostos) para um **monorepo que já existe**, com o projeto Maven em `app/`. Ele não cria projeto e não altera o que o time já tem: grava só configuração na raiz ([ADR-0005](../architecture/adr/0005-public-seed-repository.md)).
 
-## Layout de destino
-
-A configuração AI-First fica na **raiz** e vale para o repositório inteiro, porque os agentes podem alterar qualquer diretório. O projeto Maven fica **sempre** em `app/` (`app/pom.xml`). Detalhes e regras por diretório: [layout do repositório](../architecture/repository-layout.md).
+## Layout esperado
 
 ```text
-<repositório>/
-├── AGENTS.md, CLAUDE.md, .agents/, .claude/, .codex/   instruções e skills (raiz)
-├── docs/, scripts/, .harness                           documentação, harness e configuração dele
-├── app/                                                projeto Maven (app/pom.xml)
-├── infra/, tests/                                      infraestrutura e testes fora do app
-└── .github/                                            do time de DevOps: o kit não grava aqui, e agentes não alteram
+<monorepo>/
+├── app/        projeto Maven (app/pom.xml): obrigatório
+├── infra/      infraestrutura (por exemplo, Terraform): opcional
+├── tests/      testes fora do app: opcional
+├── .github/    CI do time de DevOps: opcional
+└── README.md   do projeto: opcional
 ```
+
+Depois da instalação, a raiz recebe `AGENTS.md`, `CLAUDE.md`, `.agents/`, `.claude/`, `.codex/`, `.devcontainer/`, `docs/`, `scripts/`, `.harness` e os arquivos de editor e Git (`.editorconfig`, `.gitattributes`, `.gitignore`, `.gitleaks.toml`), além de `CONTRIBUTING.md` e `SECURITY.md`. As regras por diretório estão no [layout do repositório](../architecture/repository-layout.md).
 
 ## Pré-requisitos
 
-- **Stack que o harness assume:** Java, Maven Wrapper em `app/` e Spring Boot; Testcontainers com PostgreSQL para a integração. Para outras stacks, veja [Outras stacks](#outras-stacks).
-- Bash (Git Bash no Windows), Git e Docker. Opcionais: `gh`, k6 e gitleaks (sem gitleaks, a varredura usa Docker).
+- Bash com ferramentas GNU: Linux ou Windows com Git Bash (macOS precisa de `coreutils`, `gnu-sed` e `findutils`). Git e Docker. Opcionais: k6 e gitleaks (sem gitleaks, a varredura usa Docker).
+- O `app/` com `pom.xml`, Maven Wrapper (`app/mvnw`) e uma classe `@SpringBootApplication`.
 
-## Escolher o caminho
+## Instalar: um comando, só o diretório
 
-| Caminho | Quando usar | O que o destino recebe |
-|---|---|---|
-| [Projeto existente](#projeto-existente-só-configuração) | Já existe um projeto com `app/` | **Só a configuração AI-First.** Nada em `app/`, `infra/`, `tests/` ou `.github/` é criado ou alterado |
-| [Seed público](#seed-público) | Projeto novo, do zero | Configuração + `app/` compilável sem negócio + `infra/` e `tests/` |
-
-## Projeto existente: só configuração
+Pelo seed público, que é o instalador:
 
 ```bash
-bash scripts/agents/export-kit.sh ../orders-service --project-name "Orders Service"
+git clone https://github.com/wesleyosantos91/java-ai-first-seed.git
+bash java-ai-first-seed/install.sh /caminho/do/monorepo
 ```
 
-| Grupo | Arquivos na raiz do destino | Depois |
-|---|---|---|
-| Contexto dos agentes | `AGENTS.md`, `CLAUDE.md`, `.agents/skills/`, `.claude/settings.json`, `.codex/` | §1 (propósito, Negócio) e §2 (stack já detectada em `app/pom.xml`; persistência, Engenharia) com os campos prontos |
-| Harness | `scripts/` (sem as ferramentas do kit), `.harness` (`APP_DIR=app`, `QUALITY_GATES=optional`), `.editorconfig`, `.gitattributes`, `.gitignore`, `.gitleaks.toml` | Genérico; `bash scripts/agents/list-pending.sh` lista o que falta preencher, por responsável |
-| Documentação de engenharia | `docs/ai/`, `docs/engineering/`, `docs/architecture/` (convenções, regras, layout, ADRs 0001 a 0003), `docs/features/`, `docs/how-to/run-tests.md`, `docs/how-to/enable-quality-gates.md` (com os blocos de pom e testes prontos para o pacote do projeto) | ADRs entram como **Proposta**, com a seção "Revisão neste projeto" pronta para a decisão |
-| Produto | `docs/product/TEMPLATE.md` e `docs/product/prd.md` | O time de negócio preenche o PRD |
-| Ambiente e governança | `.devcontainer/`, `SECURITY.md`, `CONTRIBUTING.md`, `README.md` com seções prontas (se não existir) | Visão geral (Negócio) e licença (Engenharia) |
-| Não vai | `.github/`, `src/`, `pom.xml`, testes, exportador do kit e seu teste, PRD-001, FEAT-0001, `docs/reference/`, ADR-0004, ADR-0005, entradas do registro de aprendizados, `LICENSE`, `NOTICE` | `.github/` é do time de DevOps; o restante é deste produto, deste repositório ou decisão do novo dono. O projeto não depende deste repositório nem do seed |
+Ou a partir deste repositório, com o mesmo resultado:
 
-O exportador:
+```bash
+bash scripts/agents/export-kit.sh /caminho/do/monorepo
+```
 
-- **lê** `app/` (sem gravar) para detectar a classe `@SpringBootApplication`, o pacote base, o `java.version` e a versão do Spring Boot. O pacote substitui o deste repositório nas skills e nos documentos;
-- monta o kit numa área temporária, recusa qualquer arquivo sob `app/`, `infra/`, `tests/` ou `.github/`, roda o `check-config.sh` e só então copia. Se algo falhar, o destino não é alterado;
-- **nunca sobrescreve**: arquivo de configuração que já existe e difere recebe a versão do kit como `<arquivo>.kit`, para você mesclar.
+O instalador:
 
-Os quality gates dependem do `app/pom.xml`, que o kit não altera. Com `QUALITY_GATES=optional`, cada gate não configurado retorna SKIP com o motivo, e o `verify.sh` termina PARCIAL. Para ativá-los, siga [Ativar os quality gates](enable-quality-gates.md).
+1. **Detecta** em `app/`, só por leitura: a classe `@SpringBootApplication`, o pacote, o `java.version`, o Spring Boot, os starters e o nome do projeto (`<name>` ou `<artifactId>` do `app/pom.xml`, ou o nome do diretório).
+2. **Monta a configuração** numa área temporária, com os valores detectados: pacote nas skills e nos documentos, stack no `AGENTS.md` §2, blocos de quality gates com o pacote do projeto e `.harness` com `APP_DIR=app` e `QUALITY_GATES=optional`.
+3. **Verifica** essa configuração com o `check-config.sh` e recusa qualquer arquivo sob `app/`, `infra/`, `tests/`, `.github/` ou no `README.md`.
+4. **Copia sem sobrescrever:** se um arquivo de configuração já existe e é diferente, a versão do kit fica ao lado como `<arquivo>.kit`, para mesclar.
 
-Validação real (2026-11-21), com um app do Spring Initializr em `app/` (Boot 4.2.0, Java 17, só webmvc): `app/` ficou byte a byte igual, e o `verify.sh` deu Agentes e Build **PASS**; Unitários SKIP com aviso do `DemoApplicationTests` (`*Tests` não segue a convenção); Arquitetura, Integração e Cobertura SKIP → PARCIAL.
+Se qualquer etapa falhar, o projeto não é alterado. Nada do instalador (`install.sh`, `payload/`, `templates/`) vai para o projeto, que não depende do seed nem deste repositório.
 
-## Seed público
+Validação real (2026-11-21), com um app do Spring Initializr em `app/` (Boot 4.2.0, Java 17, só webmvc): `app/` e `infra/` ficaram byte a byte iguais. O `verify.sh` deu Agentes e Build **PASS**; Unitários SKIP, com aviso sobre o `DemoApplicationTests` (`*Tests` não segue a convenção); Arquitetura, Integração e Cobertura SKIP por não estarem configuradas → PARCIAL.
 
-O repositório [java-ai-first-seed](https://github.com/wesleyosantos91/java-ai-first-seed) é um *GitHub Template*: a configuração acima, mais `app/` com uma aplicação Spring Boot mínima (`com.example.seed.SeedApplication`, sem endpoints) e os gates configurados (`QUALITY_GATES=required`), `infra/`, `tests/performance/k6/smoke.js`, `LICENSE`/`NOTICE` e um README de uso. Não traz `.github/`.
+## Depois de instalar
 
-1. *Use this template* no GitHub e clone o repositório criado.
-2. Dê nome ao projeto (pacote, classe principal, `groupId`/`artifactId` em `app/pom.xml`, `spring.application.name`, devcontainer e README):
+Tudo que precisa ser preenchido já vem com a seção pronta e com o campo marcado por responsável: `[PREENCHER-NEGÓCIO: ...]` ou `[PREENCHER-ENGENHARIA: ...]`.
 
-   ```bash
-   bash scripts/agents/init-project.sh --base-package com.acme.orders \
-     --main-class OrdersApplication --project-name "Orders Service"
-   ```
+```bash
+bash scripts/agents/list-pending.sh   # todos os campos, por responsável, com arquivo e linha
+bash scripts/product/check-prd.sh     # PRD
+```
 
-   O script recusa um projeto já inicializado e uma working tree com alterações e não faz commit. É de uso único: ao final, remove a si mesmo e `scripts/lib/rename.sh`, e o projeto deixa de depender do seed. Revise com `git status` e `git diff`.
-3. O time de negócio preenche `docs/product/prd.md`. Cada seção indica quem preenche (Negócio, Engenharia ou Ambos) e se é obrigatória; `bash scripts/product/check-prd.sh` lista o que falta por responsável. Um PRD com Status Aprovado e campos pendentes reprova o `check-config`.
-4. Siga [Depois da exportação](#depois-da-exportação).
+| Quem | O quê |
+|---|---|
+| Negócio | PRD em `docs/product/prd.md` (cada seção diz quem preenche e se é obrigatória) e propósito no `AGENTS.md` §1 |
+| Engenharia | Seção "Revisão neste projeto" dos ADRs 0001 a 0003 (Aceita, Rejeitada ou Substituída) e atualização do índice; persistência no `AGENTS.md` §2; licença no `CONTRIBUTING.md` |
+| Engenharia | Quality gates: `bash scripts/quality/enable-gates.sh --dry-run` mostra o que muda; `--apply` aplica os blocos prontos de `docs/how-to/enable-quality-gates.md` no `app/pom.xml` e em `app/src/test/java` e troca para `QUALITY_GATES=required`. É mudança no app e exige autorização |
+| DevOps | `.github/` continua com o time: o workflow só chama `bash scripts/ci.sh`, que grava um resumo JSON ([integração à CI](ci-integration.md), com exemplo de workflow e a recomendação de CODEOWNERS e proteção de branch). O `.claude/settings.json` nega aos agentes a edição de `.github/**`, e o `pre-commit` avisa quando um commit altera `.github/` |
 
-**Manter o seed:** ele só muda por regeneração. A partir deste repositório, `bash scripts/agents/export-kit.sh <diretório-vazio> --seed`, `bash scripts/verify.sh` no resultado, e a publicação da diferença no repositório do seed por pull request. Correções feitas direto no seed se perdem na próxima geração.
+Ative e verifique:
 
-## Depois da exportação
+```bash
+git init                                 # se ainda não for um repositório
+bash scripts/git/install-hooks.sh        # commit-msg e pre-commit
+bash scripts/setup.sh                    # Java (comparado ao app/pom.xml), Maven Wrapper, Docker, hooks
+bash scripts/agents/check-config.sh      # contexto dos agentes, links, .harness, PRD
+bash scripts/verify.sh                   # fluxo padrão, com o Maven em app/
+```
 
-1. **Preencher as seções prontas:** `bash scripts/agents/list-pending.sh` lista cada campo `[PREENCHER-NEGÓCIO: ...]` e `[PREENCHER-ENGENHARIA: ...]` com arquivo e linha (`AGENTS.md` §1 e §2, README, licença no `CONTRIBUTING.md`, revisão dos ADRs). Confira também as versões em `.devcontainer/devcontainer.json`. Se o app expõe JSON, considere `spring.jackson.deserialization.fail-on-unknown-properties: true` e `spring.mvc.problemdetails.enabled: true` no `application.yaml`. Isso é mudança no app, e exige autorização.
-2. **Contrato e decisões:** PRD aprovado por revisão humana (`check-prd.sh` sem pendências); em cada ADR 0001 a 0003, a seção "Revisão neste projeto" preenchida (Aceita, Rejeitada ou Substituída por novo ADR) e o índice atualizado.
-3. **`.github/`:** workflows, CODEOWNERS e templates ficam com o time de DevOps. O `.claude/settings.json` nega a edição de `.github/**` aos agentes.
-4. **Ativar e verificar:**
+Com gates opcionais ou sem código de negócio, o `verify.sh` termina PARCIAL. **Isso é esperado:** a ativação dos gates e a primeira feature tiram o fluxo desse estado. Providers: no Codex, marque o projeto como confiável para carregar `.codex/`; no Claude Code, confira com `/skills` que as skills aparecem; o Devin lê `AGENTS.md` e `.agents/skills/` sem configuração extra. Primeira feature: skill `requirements-discovery` ou `spec-driven-development`, depois `feature-delivery`.
 
-   ```bash
-   git init                                 # se ainda não for um repositório
-   bash scripts/git/install-hooks.sh        # commit-msg e pre-commit
-   bash scripts/setup.sh                    # Java (comparado ao app/pom.xml), Maven Wrapper, Docker, hooks
-   bash scripts/agents/check-config.sh      # contexto dos agentes, links, marcadores, .harness, PRD
-   bash scripts/harness-tests/harness.sh    # contratos do harness (Maven/Docker simulados)
-   bash scripts/verify.sh                   # fluxo padrão, com o Maven em app/
-   ```
+## Atualizar um projeto
 
-   Sem código de negócio, ou com gates opcionais, o `verify.sh` termina PARCIAL. **Isso é esperado:** a primeira feature e a ativação dos gates tiram o fluxo desse estado.
-5. **Providers de IA:** no Codex, marque o projeto como confiável para carregar `.codex/`; no Claude Code, confira com `/skills` que as skills aparecem; o Devin lê `AGENTS.md` e `.agents/skills/` sem configuração extra.
-6. **Primeira feature:** registre a demanda com a skill `requirements-discovery` ou `spec-driven-development` (`docs/features/FEAT-0001-*/spec.md`), aprove o escopo e siga a skill `feature-delivery`.
+Rode o instalador de novo, a partir de um clone atualizado do seed (ou de `export-kit.sh` aqui). A saída mostra a versão anterior e a nova (`KIT_VERSION` no `.harness`). O `.harness` é mesclado, preservando o `QUALITY_GATES` do projeto. O `.kit-manifest` (versionado na raiz) registra o hash de cada arquivo que o kit instalou: arquivo ainda idêntico ao instalado é **atualizado no lugar**; só os arquivos que o projeto alterou recebem a versão nova ao lado, como `<arquivo>.kit`, para mesclar. A saída informa quantos arquivos foram atualizados e quais viraram `.kit`. `app/`, `infra/`, `tests/`, `.github/` e `README.md` continuam intocados.
 
-Trechos específicos deste repositório dentro de documentos genéricos são tratados por marcadores invisíveis: `<!-- kit:omit-line -->`, `<!-- kit:replace-line: TEXTO -->` e `<!-- kit:omit-start -->`…`<!-- kit:omit-end -->`, validados pelo `check-config.sh`. Ao escrever aqui um trecho que só vale para este produto, marque-o.
+## Manter o seed
+
+O seed só muda por regeneração a partir deste repositório: `bash scripts/agents/export-kit.sh --seed <diretório-vazio>`, que roda o autoteste do seed (`selftest.sh`) antes de gravar, e a publicação da diferença no repositório do seed por pull request. O arquivo `VERSION` do seed (data e commit deste repositório) é o `KIT_VERSION` gravado nos projetos. Correções feitas direto no seed se perdem na próxima geração.
+
+O que vai para o projeto sai deste repositório. Trechos que só valem aqui são tratados por marcadores invisíveis nos Markdown: `<!-- kit:omit-line -->`, `<!-- kit:replace-line: TEXTO -->` e `<!-- kit:omit-start -->`…`<!-- kit:omit-end -->`, validados pelo `check-config.sh`. Ao escrever aqui um trecho que só vale para este produto, marque-o. O teste `bash scripts/harness-tests/export-kit.sh` aplica o kit num monorepo de exemplo (`app/`, `infra/` com Terraform, `tests/`, `.github/`, README), pelos dois caminhos, e confere por hash que nada do projeto mudou.
 
 ## Outras stacks
 
@@ -99,13 +91,12 @@ Trechos específicos deste repositório dentro de documentos genéricos são tra
 | `scripts/agents/`, `scripts/git/`, `scripts/security/`, `scripts/product/`, `.agents/`, `.claude/`, `.codex/`, `docs/` | Como estão (a documentação de testes precisa refletir a nova ferramenta) |
 | `scripts/build/`, `scripts/test/`, `scripts/quality/`, `scripts/lib/test-suite.sh` | Reescrever para a ferramenta da stack, **mantendo o contrato** de saída `0` PASS, `3` SKIP, `1` FAIL e a regra "SKIP não é PASS" |
 | `ArchitectureTest`, `TestcontainersConfiguration` | Substituir pelo equivalente da stack |
-| `scripts/harness-tests/` | Adaptar os testes que simulam Maven (`harness.sh`) e os que usam Maven real |
 
 ## Diagnóstico
 
-- **`check-config` acusa link quebrado no destino:** um trecho específico deste repositório não foi marcado. Marque-o aqui com `kit:omit-line` ou `kit:replace-line` e exporte de novo (`scripts/harness-tests/export-kit.sh` reproduz o caso).
-- **`app/pom.xml ou Maven Wrapper (app/mvnw) não encontrado`:** o projeto Maven precisa estar em `app/`, com o Maven Wrapper.
+- **`app/pom.xml não encontrado`:** o kit configura um monorepo existente; o projeto Maven precisa estar em `app/`.
+- **`Classe @SpringBootApplication não encontrada`:** a classe principal precisa estar em `app/src/main/java`.
+- **`check-config` acusa link quebrado:** um trecho específico deste repositório não foi marcado. Marque-o aqui com `kit:omit-line` ou `kit:replace-line` e regenere (`scripts/harness-tests/export-kit.sh` reproduz o caso).
 - **`<gate> não configurado em app/pom.xml`:** esperado com `QUALITY_GATES=optional`; veja [Ativar os quality gates](enable-quality-gates.md).
 - **`.harness: APP_DIR=...; em projetos o pom fica em app/`:** use `APP_DIR=app`.
-- **`AGENTS.md` acima do limite:** o orçamento de 12 KB vale também no destino. Mova detalhes para `docs/how-to/` ou skills.
-- **Stubs divergentes:** depois de editar uma skill, rode `bash scripts/agents/sync-skills.sh`.
+- **`AGENTS.md` acima do limite:** o orçamento de 12 KB vale também no projeto. Mova detalhes para `docs/how-to/` ou skills.

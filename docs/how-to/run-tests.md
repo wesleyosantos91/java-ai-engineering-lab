@@ -22,13 +22,31 @@ bash scripts/verify.sh            # configuração de agentes, build, unitários
 bash scripts/quality/mutation.sh     # explícito; fora do verify.sh
 ```
 
+## Mapa dos scripts
+
+| Em `scripts/` | Responsabilidade |
+|---|---|
+| `setup.sh`, `verify.sh` | Inspecionar ambiente; fluxo padrão (agentes, build, unitários, arquitetura, integração, cobertura), com resumo JSON em `target/harness/` |
+| `ci.sh` | Ponto de entrada da CI: `verify.sh`, mutação e segredos, com resumo JSON ([integração à CI](ci-integration.md)) |
+| `build/`, `test/`, `quality/coverage.sh` | Etapas individuais do fluxo padrão |
+| `quality/mutation.sh`, `performance/smoke.sh` | PIT e smoke k6; explícitos, fora do `verify.sh` |
+| `quality/enable-gates.sh` | Aplica no app os blocos prontos de quality gates (`--dry-run` ou `--apply`; mudança de build, só com autorização) |
+| `agents/` | `check-config.sh`, `sync-skills.sh`, `list-pending.sh`, `export-kit.sh` e `kit/` (instalador do kit), hooks do Claude <!-- kit:replace-line: | `agents/` | `check-config.sh`, `sync-skills.sh`, `list-pending.sh` e hooks do Claude | --> |
+| `product/check-prd.sh` | Pendências do PRD por responsável; rejeita PRD Aprovado com pendências |
+| `git/` | `guard-branch.sh`, `check-commit-msg.sh` e hooks (`install-hooks.sh`) |
+| `security/scan-secrets.sh` | gitleaks; explícito, no `pre-commit` e no `ci.sh` |
+| `lib/` | Bibliotecas: `.harness` (`app.sh`), pom, suítes, trava de execução (`lock.sh`) e resumo JSON |
+| `harness-tests/` | Testes do próprio harness; `linux.sh` repete os que não usam Maven num contêiner Linux |
+
+Uma execução do harness por repositório de cada vez: os scripts que usam o `target/` adquirem uma trava (`.git/harness.lock`) e falham na hora, com o PID, se outra execução estiver em andamento. A trava de um processo encerrado é tomada automaticamente; `HARNESS_LOCK_DISABLE=1` a desativa (só para depuração).
+
 ## Onde o harness procura o projeto (`.harness`)
 
 Os scripts ficam na raiz, mas o Maven executa no diretório do app, declarado no arquivo `.harness` da raiz (lido por `scripts/lib/app.sh` como chave=valor, sem executar código):
 
 | Chave | Valores | Efeito |
 |---|---|---|
-| `APP_DIR` | Caminho relativo, sem `..` (padrão `.`) | Onde ficam `pom.xml`, `mvnw`, `src/` e `target/`. Neste repositório, `.`; em projetos criados pelo kit ou pelo seed, sempre `app` ([layout do repositório](../architecture/repository-layout.md)) |
+| `APP_DIR` | Caminho relativo, sem `..` (padrão `.`) | Onde ficam `pom.xml`, `mvnw`, `src/` e `target/`. Neste repositório, `.`; nos projetos que recebem o kit, sempre `app` ([layout do repositório](../architecture/repository-layout.md)) |
 | `QUALITY_GATES` | `required` (padrão) ou `optional` | Gate não configurado no pom do app (sem a execução `architecture`, o Failsafe, o JaCoCo `coverage-check`, o `pitest-maven` ou as propriedades `app.*`): `required` = FAIL; `optional` = SKIP, com o motivo e o [guia para ativar](enable-quality-gates.md) |
 
 | `REPOSITORY_ROLE` | `project` (padrão) ou `reference` | Só `reference` (este repositório) aceita `APP_DIR` diferente de `app` |
@@ -131,7 +149,7 @@ bash scripts/harness-tests/agent-config.sh
 bash scripts/harness-tests/git-hooks.sh
 ```
 
-O exportador do kit tem teste próprio, em destinos temporários: `bash scripts/harness-tests/export-kit.sh` (kit só de configuração, seed e `init-project.sh` num projeto criado do seed). <!-- kit:omit-line -->
+O kit tem teste próprio: `bash scripts/harness-tests/export-kit.sh` instala a configuração num monorepo de exemplo, a partir deste repositório e pelo seed, e confere por hash que nada do projeto mudou. <!-- kit:omit-line -->
 
 A primeira verificação simula `agents/check-config.sh`, que tem teste próprio (a quarta verificação), e cobre ausência de suítes, falhas Maven/Docker, XML ausente/obsoleto, zero testes, testes ignorados, resumo e interrupção de etapas. A segunda verifica Surefire com Docker inacessível, Mockito inline sem attach dinâmico, Failsafe com PostgreSQL sem repetir unitários e uma falha deliberada de IT que deve retornar erro em `verify`. Essa falha esperada só existe na cópia e o script retorna sucesso apenas se ela for rejeitada.
 
