@@ -1,14 +1,30 @@
 # Java AI Engineering Lab
 
-Laboratório para estudar, implementar e avaliar desenvolvimento **AI-First** com Java, usando agentes de IA sob regras explícitas de engenharia: contratos aprovados, testes automatizados, evidências verificáveis e revisão humana.
+Repositório de referência de como configurar um projeto Java **AI-First** com boas práticas: agentes de IA (Codex, Claude Code e Devin) trabalhando sob regras explícitas de engenharia, com **context engineering**, **harness engineering**, PRD como contrato de produto, ADRs como histórico de decisões, testes automatizados, evidências verificáveis e revisão humana ([ADR-0004](docs/architecture/adr/0004-ai-first-reference-repository.md)).
 
-O domínio de estudo é uma **Product Catalog API** (CRUD de produtos com PostgreSQL), definida no [PRD-001](docs/product/prd.md).
+A aplicação-exemplo é uma **Product Catalog API** (CRUD de produtos com PostgreSQL), definida no [PRD-001](docs/product/prd.md). Copie a estrutura e adapte o contrato ao seu domínio.
 
 > [!NOTE]
-> O projeto está na fase de **fundação**. O contrato do produto está aprovado e o harness de engenharia está operacional, mas **nenhuma feature de produto foi implementada** ainda. Consulte o [catálogo de features](docs/features/README.md).
+> A configuração AI-First e o harness estão operacionais. A primeira feature, [FEAT-0001 — criar produto](docs/features/FEAT-0001-create-product/spec.md), demonstra o fluxo completo (spec aprovada → TDD → quality gates) e aguarda revisão humana. Consulte o [catálogo de features](docs/features/README.md).
+
+## O que este repositório demonstra
+
+| Prática | Onde |
+|---|---|
+| Instruções canônicas e contexto em camadas | [`AGENTS.md`](AGENTS.md), [context engineering](docs/ai/context-engineering.md) |
+| Um conjunto de regras para vários providers | [`CLAUDE.md`](CLAUDE.md), `.claude/`, `.codex/`, [ADR-0002](docs/architecture/adr/0002-multi-provider-agent-context.md) |
+| Procedimentos sob demanda (Agent Skills) | [`.agents/skills/`](.agents/skills/) |
+| Contrato de produto e de features | [PRD](docs/product/prd.md), [catálogo de features](docs/features/README.md) |
+| Histórico de decisões | [ADRs](docs/architecture/adr/README.md) |
+| Harness sem falso PASS e quality gates | [`scripts/`](scripts/), [guia de testes](docs/how-to/run-tests.md), [ADR-0003](docs/architecture/adr/0003-test-suites-and-quality-gates.md) |
+| Aprendizado contínuo versionado | [skill lessons-learned](.agents/skills/lessons-learned/SKILL.md), [registro](docs/ai/lessons-learned.md) |
+| Regras de commit aplicadas por hooks, não só por texto | `scripts/git/` (`check-commit-msg.sh`, `install-hooks.sh`), [CONTRIBUTING](CONTRIBUTING.md) |
+| Segurança e governança | [SECURITY.md](SECURITY.md), varredura de segredos (`scripts/security/`), [CODEOWNERS](.github/CODEOWNERS), templates de issue e PR |
+| Ambiente reproduzível para agentes em nuvem | [`.devcontainer/`](.devcontainer/devcontainer.json) (Java 27, Docker, gh) |
 
 ## Sumário
 
+- [O que este repositório demonstra](#o-que-este-repositório-demonstra)
 - [Estado atual](#estado-atual)
 - [Stack](#stack)
 - [Início rápido](#início-rápido)
@@ -22,16 +38,19 @@ O domínio de estudo é uma **Product Catalog API** (CRUD de produtos com Postgr
 
 | Área | Situação |
 |---|---|
-| Contrato do produto ([PRD-001](docs/product/prd.md)) | ✅ Aprovado (versão 1.0) |
+| Contrato do produto ([PRD-001](docs/product/prd.md)) | ✅ Versão 1.0 aprovada; 📝 versão 1.1 (novo propósito) aguardando aprovação |
 | Princípios de arquitetura ([ADR-0001](docs/architecture/adr/0001-architecture-principles.md)) | ✅ Aceito |
+| Contexto multi-provider, quality gates e repositório de referência ([ADR-0002](docs/architecture/adr/0002-multi-provider-agent-context.md), [ADR-0003](docs/architecture/adr/0003-test-suites-and-quality-gates.md), [ADR-0004](docs/architecture/adr/0004-ai-first-reference-repository.md)) | 📝 Propostos, aguardando revisão humana |
 | Harness local (`scripts/`) | ✅ Operacional: build, suítes unitária e de integração separadas, guard de branch |
 | Teste de integração de infraestrutura | ✅ `JavaAiEngineeringLabApplicationIT` (contexto Spring e PostgreSQL 18.2 via Testcontainers) |
-| Instruções e skills para agentes | ✅ [`AGENTS.md`](AGENTS.md) e [`.agents/skills/`](.agents/skills/) |
-| Endpoints `/api/v1/products` | ⏳ Especificados no PRD, não implementados |
-| Migrações Flyway | ⏳ Nenhuma migração criada |
-| Testes unitários de produto | ⏳ Inexistentes; a suíte unitária retorna `SKIP` |
-| Quality gates (JaCoCo, ArchUnit, PIT) | ✅ Configurados e validados em cópia isolada; no scaffold retornam `SKIP` por falta de código elegível |
-| Observabilidade (Datadog) e testes de carga (k6) | ⏳ Planejados; os scripts em `performance/k6/` estão vazios |
+| Instruções e skills para agentes | ✅ [`AGENTS.md`](AGENTS.md) e [`.agents/skills/`](.agents/skills/), com adaptadores para Codex e Claude Code verificados por `scripts/agents/check-config.sh` |
+| `POST /api/v1/products` ([FEAT-0001](docs/features/FEAT-0001-create-product/spec.md)) | 🔎 Implementado com TDD, em validação (aguardando revisão humana); [referência da API](docs/reference/api/products.md) |
+| Consulta, listagem, atualização e exclusão | ⏳ Especificadas no PRD, não implementadas |
+| Migrações Flyway | ✅ `V1__create_product.sql` (tabela `product` com restrições de integridade) |
+| Testes de produto | ✅ 57 unitários (domain e service) e 32 de integração HTTP + PostgreSQL, incluindo concorrência |
+| Quality gates (JaCoCo, ArchUnit, PIT) | ✅ JaCoCo LINE 99,32% e BRANCH 95,65%; PIT 100% (43/43); ArchUnit com 8 regras aprovadas e 3 não aplicáveis (N/A: exigem duas features ou mensageria) |
+| Smoke de performance (k6) | ✅ `scripts/performance/smoke.sh` contra `/actuator/health`; valida disponibilidade, não desempenho |
+| Observabilidade (Datadog), load e stress (k6) | ⏳ Planejados para a primeira feature com endpoint ([skill performance-optimization](.agents/skills/performance-optimization/SKILL.md)) |
 
 ## Stack
 
@@ -63,33 +82,45 @@ bash scripts/setup.sh    # inspeciona Java, Maven Wrapper e Docker
 bash scripts/verify.sh   # build, testes unitários e de integração
 ```
 
-O `verify.sh` termina com um resumo por etapa (`PASS`, `FAIL`, `SKIP` ou `NOT RUN`). No estado atual, sem código de negócio, as etapas unitária, de arquitetura e de cobertura retornam `SKIP` e o resultado agregado é **PARCIAL**. Isso é esperado e **não** equivale a aprovação. A mutação exige execução explícita com `bash scripts/test-mutation.sh`. Detalhes, códigos de saída e diagnóstico estão no [guia de testes](docs/how-to/run-tests.md).
+O `verify.sh` termina com um resumo por etapa (`PASS`, `FAIL`, `SKIP` ou `NOT RUN`). No estado atual, sem código de negócio, as etapas unitária, de arquitetura e de cobertura retornam `SKIP` e o resultado agregado é **PARCIAL**. Isso é esperado e **não** equivale a aprovação. A mutação exige execução explícita com `bash scripts/quality/mutation.sh`. Detalhes, códigos de saída e diagnóstico estão no [guia de testes](docs/how-to/run-tests.md).
 
 ## Harness de engenharia
 
-Scripts versionados em `scripts/`, preferidos a comandos Maven avulsos por pessoas e agentes:
+Scripts versionados em `scripts/`, organizados por domínio e preferidos a comandos Maven avulsos por pessoas e agentes. Os pontos de entrada ficam na raiz:
 
-| Script | Responsabilidade |
-|---|---|
-| `scripts/setup.sh` | Inspecionar ambiente, versões e Docker |
-| `scripts/build.sh` | Compilar com o Maven Wrapper |
-| `scripts/test-unit.sh` | Executar somente `*Test.java` (Surefire), exceto testes de arquitetura |
-| `scripts/test-architecture.sh` | Executar as regras ArchUnit (`*ArchitectureTest.java`) |
-| `scripts/test-integration.sh` | Executar somente `*IT.java` (Failsafe) com Testcontainers |
-| `scripts/test-coverage.sh` | Aplicar JaCoCo LINE e BRANCH ≥ 90% sobre os dados das suítes |
-| `scripts/test-mutation.sh` | Aplicar PIT, mutation score ≥ 90% (execução explícita) |
-| `scripts/verify.sh` | Orquestrar build, unitários, arquitetura, integração e cobertura |
-| `scripts/guard-branch.sh` | Bloquear operações de entrega em `develop`, `main` ou `master` |
-| `scripts/tests/` | Testes do próprio harness |
+```text
+scripts/
+├── setup.sh                 # inspecionar ambiente, versões e Docker
+├── verify.sh                # fluxo padrão: agentes, build, unitários, arquitetura, integração, cobertura
+├── build/compile.sh         # compilar com o Maven Wrapper
+├── test/                    # unit.sh (*Test), architecture.sh (*ArchitectureTest), integration.sh (*IT)
+├── quality/                 # coverage.sh (JaCoCo ≥ 90%), mutation.sh (PIT ≥ 90%, explícito)
+├── performance/smoke.sh     # smoke k6 de disponibilidade (explícito)
+├── agents/                  # check-config.sh, sync-skills.sh e hooks dos providers
+├── git/                     # guard-branch.sh, check-commit-msg.sh, install-hooks.sh e hooks/
+├── security/scan-secrets.sh # varredura de segredos com gitleaks (explícito e no pre-commit)
+├── lib/                     # helpers compartilhados (não executáveis isoladamente)
+└── harness-tests/           # testes do próprio harness
+```
 
-`SKIP_INTEGRATION=1 bash scripts/verify.sh` omite a integração e produz resultado **parcial**. Use apenas com justificativa comunicada. As regras completas estão no [AGENTS.md, seção 7](AGENTS.md#7-harness-local-de-engenharia).
+Todos usam o mesmo contrato de saída: `0` PASS, `3` SKIP e `1` FAIL.
+
+`SKIP_INTEGRATION=1 bash scripts/verify.sh` omite a integração e produz resultado **parcial**. Use apenas com justificativa comunicada. As regras completas estão no [AGENTS.md, seção 7](AGENTS.md#7-harness-local).
 
 ## Desenvolvimento com agentes de IA
 
-A configuração é **agnóstica de provider**: funciona com Codex, Claude Code, GitHub Copilot, Devin ou qualquer agente que leia arquivos do repositório.
+A configuração tem **uma fonte canônica** e adaptadores finos por provider ([ADR-0002](docs/architecture/adr/0002-multi-provider-agent-context.md)):
 
-- **[`AGENTS.md`](AGENTS.md)** é o ponto de entrada: stack, regras arquiteturais, fluxo de trabalho, harness, segurança, Git e formato obrigatório de relatório.
-- **[`.agents/skills/`](.agents/skills/)** reúne procedimentos especializados no formato aberto [Agent Skills](https://agentskills.io/specification), carregados sob demanda. O catálogo completo está no [AGENTS.md, seção 3](AGENTS.md#catálogo-de-skills).
+- **[`AGENTS.md`](AGENTS.md)** é o ponto de entrada, carregado em toda sessão e mantido abaixo de 12 KB: stack, regras arquiteturais, fluxo de trabalho, harness, segurança, Git e formato obrigatório de relatório.
+- **[`.agents/skills/`](.agents/skills/)** reúne procedimentos especializados no formato aberto [Agent Skills](https://agentskills.io/specification), carregados sob demanda. O catálogo completo está no [AGENTS.md, seção 3](AGENTS.md#skills).
+
+| Provider | Lê | Adaptador versionado |
+|---|---|---|
+| Codex | `AGENTS.md`, `.agents/skills/` | `.codex/config.toml` e `.codex/rules/` (sandbox e aprovação de comandos de entrega) |
+| Claude Code | [`CLAUDE.md`](CLAUDE.md), que importa o `AGENTS.md`, e `.claude/skills/` | Stubs de skills gerados; `.claude/settings.json` com permissões e hook de branch |
+| Devin | `AGENTS.md`, `.agents/skills/` | Nenhum necessário |
+
+As camadas de contexto, o papel de PRD e ADRs e como evoluir a configuração estão em [Context engineering e harness para agentes](docs/ai/context-engineering.md).
 
 Fluxo ordinário de uma entrega:
 
@@ -110,19 +141,24 @@ Princípios que valem para qualquer agente:
 
 ```text
 .
-├── AGENTS.md                  # instruções para agentes de IA
-├── .agents/skills/            # skills de agente (SKILL.md)
+├── AGENTS.md                  # instruções canônicas para agentes de IA
+├── CLAUDE.md                  # adaptador do Claude Code (importa AGENTS.md)
+├── .agents/skills/            # skills de agente canônicas (SKILL.md)
+├── .claude/                   # stubs de skills gerados e settings do Claude Code
+├── .codex/                    # config e regras de comando do Codex
+├── .devcontainer/             # ambiente reproduzível (Codespaces e agentes em nuvem)
+├── .github/                   # CODEOWNERS, templates de issue e de pull request
+├── CONTRIBUTING.md            # fluxo de contribuição
+├── LICENSE, NOTICE            # Apache License 2.0 e atribuição
+├── SECURITY.md                # política e reporte de vulnerabilidades
 ├── docs/
 │   ├── product/               # PRD
-│   ├── architecture/          # ADRs, packages e regras de dependência
+│   ├── architecture/          # ADRs (índice e template), packages e regras de dependência
 │   ├── engineering/           # Definition of Done
 │   ├── features/              # catálogo e template de especificação
 │   ├── how-to/                # guias operacionais
-│   ├── ai/                    # registros de trabalho com IA
-│   └── experiments/           # protocolos de experimentos
-├── experiments/               # manifests, prompts e resultados
-├── infrastructure/docker/     # Docker Compose (ainda vazio)
-├── performance/k6/            # testes de carga (ainda vazios)
+│   └── ai/                    # context engineering e aprendizados registrados
+├── performance/k6/            # cenários k6 (smoke de disponibilidade)
 ├── scripts/                   # harness local
 └── src/                       # código e testes Java
 ```
@@ -134,6 +170,7 @@ Princípios que valem para qualquer agente:
 - [Catálogo de features](docs/features/README.md) e [template de especificação](docs/features/TEMPLATE.md)
 
 **Arquitetura**
+- [Índice de ADRs, processo e template](docs/architecture/adr/README.md)
 - [ADR-0001 — Princípios de arquitetura](docs/architecture/adr/0001-architecture-principles.md)
 - [Convenções de packages](docs/architecture/package-conventions.md)
 - [Regras de dependência](docs/architecture/dependency-rules.md)
@@ -141,20 +178,19 @@ Princípios que valem para qualquer agente:
 **Engenharia**
 - [Definition of Done](docs/engineering/definition-of-done.md)
 - [Executar e diagnosticar testes](docs/how-to/run-tests.md)
+- [Como contribuir](CONTRIBUTING.md)
 
 **Agentes de IA**
-- [AGENTS.md](AGENTS.md)
+- [AGENTS.md](AGENTS.md) e [CLAUDE.md](CLAUDE.md)
+- [Context engineering e harness para agentes](docs/ai/context-engineering.md)
+- [Registro de aprendizados](docs/ai/lessons-learned.md) e [skill lessons-learned](.agents/skills/lessons-learned/SKILL.md)
 - [Skill feature-delivery](.agents/skills/feature-delivery/SKILL.md) (entrega funcional)
 - [Skill project-documentation](.agents/skills/project-documentation/SKILL.md) (documentação)
 
 ## Contribuição
 
-- Trabalhe em branches `feature/*`, `fix/*` ou `experiment/*`; a integração ocorre em `develop`.
-- Commits seguem [Conventional Commits](https://www.conventionalcommits.org/), em inglês e no imperativo, por exemplo `feat(product): add product creation endpoint`.
-- Antes de abrir um pull request, execute `bash scripts/guard-branch.sh` e `bash scripts/verify.sh` e confira a [Definition of Done](docs/engineering/definition-of-done.md).
-
-Documentação em português brasileiro; código, identificadores, branches e commits em inglês. As regras completas estão no [AGENTS.md, seção 9](AGENTS.md#9-git-e-versionamento).
+O fluxo de branches, commits, verificações e pull request está no [CONTRIBUTING.md](CONTRIBUTING.md). Resumo: trabalhe em `feature/*`, `fix/*` ou `experiment/*` a partir de `develop`; use Conventional Commits em inglês; execute `bash scripts/git/guard-branch.sh` e `bash scripts/verify.sh` antes do PR e preencha o [template de PR](.github/pull_request_template.md). As regras completas estão no [AGENTS.md, seção 9](AGENTS.md#9-git-e-versionamento).
 
 ## Licença
 
-Ainda não definida. O `pom.xml` não declara licença e não há arquivo `LICENSE` no repositório.
+Distribuído sob a [Apache License 2.0](LICENSE). Avisos de atribuição em [NOTICE](NOTICE).

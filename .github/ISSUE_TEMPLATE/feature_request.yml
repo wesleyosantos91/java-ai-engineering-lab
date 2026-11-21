@@ -1,0 +1,42 @@
+name: Nova demanda ou evolução
+description: Proponha uma funcionalidade ou mudança de comportamento. Ela será refinada (skill requirements-discovery) e, se aprovada, vira uma spec em docs/features/.
+labels: ["demanda"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Uma issue aprovada **não** autoriza implementação: o escopo vira `docs/features/FEAT-XXXX-*/spec.md` e precisa de aprovação humana ([catálogo de features](https://github.com/wesleyosantos91/java-ai-engineering-lab/blob/develop/docs/features/README.md)).
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema
+      description: Que problema ou necessidade motiva a demanda? Quem é afetado?
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Objetivo e resultado esperado
+      description: O que deve ser possível depois da entrega? Como saberemos que deu certo?
+    validations:
+      required: true
+  - type: input
+    id: contract
+    attributes:
+      label: Contrato relacionado
+      description: Seções do PRD, ADRs ou specs existentes, por exemplo "PRD-001 §5.2". Use "nenhum" se for nova regra de produto.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Critérios de aceitação sugeridos (BDD)
+      description: Dado / Quando / Então. Serão revisados antes da aprovação.
+      placeholder: |
+        Dado ...
+        Quando ...
+        Então ...
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Fora do escopo e dúvidas em aberto

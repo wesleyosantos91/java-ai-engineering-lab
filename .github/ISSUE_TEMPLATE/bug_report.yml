@@ -1,0 +1,34 @@
+name: Defeito
+description: Comportamento que diverge do contrato (PRD, spec ou documentação). Será investigado pela causa raiz (skill systematic-debugging).
+labels: ["defeito"]
+body:
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportamento esperado
+      description: O que deveria acontecer? Cite a fonte (PRD, spec, documentação), se houver.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Comportamento observado
+      description: O que aconteceu, com mensagens de erro e saídas relevantes. Não inclua segredos.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Passos para reproduzir
+      placeholder: |
+        1. bash scripts/...
+        2. curl ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Versão (commit) e ambiente
+      description: Commit, sistema operacional, versão do Java, Docker.
+    validations:
+      required: true
