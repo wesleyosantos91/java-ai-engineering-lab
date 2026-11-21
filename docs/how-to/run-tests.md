@@ -215,7 +215,7 @@ BASE_URL=http://localhost:9090 DURATION=30s bash scripts/performance/smoke.sh
 | PASS (`0`) | Todas as requisições a `/actuator/health` retornaram 200 com `status` `UP`; resumo em `target/performance/smoke-summary.json` |
 | FAIL (`1`) | k6 ou curl ausente, aplicação inacessível (smoke NOT RUN), threshold violado ou resumo ausente |
 
-O cenário `performance/k6/smoke.js` usa 1 VU e só thresholds de disponibilidade (`http_req_failed` = 0 e `checks` = 100%). Latências e vazão impressas pelo k6 são informativas: o [PRD](../product/prd.md) só admite metas de desempenho definidas por protocolo reproduzível. Cenários de load e stress serão criados com a primeira feature com endpoint ([skill performance-optimization](../../.agents/skills/performance-optimization/SKILL.md)).
+O cenário `tests/performance/k6/smoke.js` usa 1 VU e só thresholds de disponibilidade (`http_req_failed` = 0 e `checks` = 100%). Latências e vazão impressas pelo k6 são informativas: o [PRD](../product/prd.md) só admite metas de desempenho definidas por protocolo reproduzível. Cenários de load e stress serão criados com a primeira feature com endpoint ([skill performance-optimization](../../.agents/skills/performance-optimization/SKILL.md)).
 
 Encerre a aplicação com `Ctrl+C` no terminal em que ela foi iniciada. No Windows, matar apenas o processo `bash`/`mvnw` deixa a JVM filha escutando na porta 8080 ([LL-0006](../ai/lessons-learned.md#ll-0006--no-windows-encerrar-o-mvnw-não-encerra-a-jvm-da-aplicação)). <!-- kit:replace-line: Encerre a aplicação com `Ctrl+C` no terminal em que ela foi iniciada. No Windows, matar apenas o processo `bash`/`mvnw` deixa a JVM filha escutando na porta 8080. -->
 

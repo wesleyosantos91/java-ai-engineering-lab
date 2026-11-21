@@ -10,13 +10,17 @@ QUALITY_GATES=required
 if [[ -f "${ROOT_DIR}/.harness" ]]; then
   while IFS='=' read -r key value || [[ -n "${key}" ]]; do
     key="${key//[[:space:]]/}"
-    value="${value%%#*}"; value="${value//[[:space:]]/}"
     case "${key}" in
-      ''|'#'*) ;;
-      APP_DIR) APP_DIR="${value}" ;;
-      QUALITY_GATES) QUALITY_GATES="${value}" ;;
+      ''|'#'*) continue ;;
+      APP_DIR|QUALITY_GATES) ;;
       *) echo "[FAIL] .harness: chave desconhecida '${key}' (válidas: APP_DIR, QUALITY_GATES)." >&2; return 1 ;;
     esac
+    # Comentário ao fim da linha e espaços nas bordas são descartados; espaço interno é inválido.
+    value="${value%%#*}"
+    value="$(sed -E 's/^[[:space:]]+|[[:space:]]+$//g' <<<"${value}")"
+    [[ "${value}" != *[[:space:]]* ]] ||
+      { echo "[FAIL] .harness: valor de ${key} com espaço ('${value}')." >&2; return 1; }
+    printf -v "${key}" '%s' "${value}"
   done < <(tr -d '\r' < "${ROOT_DIR}/.harness")
 fi
 case "${APP_DIR}" in

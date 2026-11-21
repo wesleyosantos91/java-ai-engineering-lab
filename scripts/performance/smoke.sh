@@ -12,12 +12,9 @@ source "${SCRIPT_DIR}/../lib/app.sh" || exit 1
 SUMMARY="${APP_PREFIX}target/performance/smoke-summary.json"
 
 cd "${ROOT_DIR}"
-# Projetos: tests/performance/k6/ (fora do app); este lab: performance/k6/.
-SCENARIO=''
-for candidate in tests/performance/k6/smoke.js performance/k6/smoke.js; do
-  [[ -f "${candidate}" ]] && { SCENARIO="${candidate}"; break; }
-done
-if [[ -z "${SCENARIO}" ]]; then
+# Cenário fora do app, em tests/ (docs/architecture/repository-layout.md).
+SCENARIO="tests/performance/k6/smoke.js"
+if [[ ! -f "${SCENARIO}" ]]; then
   echo "[SKIP] Performance: nenhum cenário k6 (tests/performance/k6/smoke.js); smoke NOT RUN."
   exit 3
 fi

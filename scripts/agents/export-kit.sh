@@ -187,10 +187,7 @@ EOF
 
   # Cenário k6 de disponibilidade em tests/ (fora do app).
   mkdir -p "${STAGE}/tests/performance/k6" "${STAGE}/infra"
-  local k6
-  for k6 in "${ROOT_DIR}/tests/performance/k6/smoke.js" "${ROOT_DIR}/performance/k6/smoke.js"; do
-    [[ -f "${k6}" ]] && { cp "${k6}" "${STAGE}/tests/performance/k6/smoke.js"; break; }
-  done
+  cp "${ROOT_DIR}/tests/performance/k6/smoke.js" "${STAGE}/tests/performance/k6/smoke.js"
   cat > "${STAGE}/infra/README.md" <<'EOF'
 # infra
 
@@ -358,6 +355,9 @@ echo "  - Revise e aceite os ADRs herdados (0001 a 0003); o time de negócio pre
 echo "  - Gates opcionais (.harness): para ativá-los, siga docs/how-to/enable-quality-gates.md e use QUALITY_GATES=required."
 echo "  - Licença na seção \"Licença\" do CONTRIBUTING.md."
 echo "  - Hooks: bash scripts/git/install-hooks.sh (exige repositório Git); depois bash scripts/verify.sh."
-placeholders="$(grep -rlE '\[(PREENCHER|ADAPTAR)' "${STAGE}" --include='*.md' 2>/dev/null |
+# Pendências reais: fora dos templates e de trechos de código (`[PREENCHER...]` citado como exemplo).
+placeholders="$(find "${STAGE}" -type f -name '*.md' ! -name TEMPLATE.md ! -path "${STAGE}/.claude/*" -print0 |
+  xargs -0 awk '{ line = $0; gsub(/`[^`]*`/, "", line) }
+    line ~ /\[(PREENCHER|ADAPTAR)/ && !(FILENAME in seen) { seen[FILENAME]; print FILENAME }' |
   sed "s#^${STAGE}/##" | sort | tr '\n' ' ' || true)"
-[[ -z "${placeholders}" ]] || echo "  - Placeholders [PREENCHER]/[ADAPTAR] em: ${placeholders}"
+[[ -z "${placeholders}" ]] || echo "  - Campos [PREENCHER]/[ADAPTAR] a resolver em: ${placeholders}(PRD: bash scripts/product/check-prd.sh)"

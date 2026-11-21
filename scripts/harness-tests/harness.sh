@@ -176,8 +176,7 @@ check 1 'PIT (pitest-maven e propriedade app.basePath) ausente em pom.xml (QUALI
 check 1 'JaCoCo (execução coverage-check e propriedade app.mainClass) ausente' quality/coverage.sh
 check 1 'Arquitetura: <id>architecture</id> ausente' test/architecture.sh
 check 1 'Integração: maven-failsafe-plugin ausente' test/integration.sh
-printf 'QUALITY_GATES=optional
-' > "${FIXTURE}/.harness"
+printf 'QUALITY_GATES=optional\n' > "${FIXTURE}/.harness"
 check 3 'Mutação: PIT (pitest-maven e propriedade app.basePath) não configurado em pom.xml' quality/mutation.sh
 check 3 'Cobertura: JaCoCo (execução coverage-check e propriedade app.mainClass) não configurado' quality/coverage.sh
 check 3 'Arquitetura: <id>architecture</id> não configurado' test/architecture.sh
@@ -185,8 +184,8 @@ check 3 'Integração: maven-failsafe-plugin não configurado' test/integration.
 rm "${FIXTURE}/.harness"
 mv "${FIXTURE}/pom.xml.bak" "${FIXTURE}/pom.xml"
 # Performance: smoke k6 com k6 e curl simulados; a aplicação real não é necessária.
-mkdir -p "${FIXTURE}/performance/k6"
-touch "${FIXTURE}/performance/k6/smoke.js"
+mkdir -p "${FIXTURE}/tests/performance/k6"
+touch "${FIXTURE}/tests/performance/k6/smoke.js"
 cat > "${FIXTURE}/bin/curl" <<'BASH'
 #!/usr/bin/env bash
 echo "curl $*" >> "${FIXTURE_TRACE}"
@@ -234,10 +233,8 @@ check 1 'gitleaks falhou (exit 2)' security/scan-secrets.sh MOCK_GITLEAKS_EXIT=2
 mkdir -p "${FIXTURE}/app"
 mv "${FIXTURE}/pom.xml" "${FIXTURE}/mvnw" "${FIXTURE}/src" "${FIXTURE}/target" "${FIXTURE}/app/"
 check 1 'pom.xml ou Maven Wrapper (mvnw) não encontrado' test/unit.sh
-printf '# projeto
-APP_DIR=app
-QUALITY_GATES=required
-' > "${FIXTURE}/.harness"
+harness() { printf '%s\n' "$@" > "${FIXTURE}/.harness"; }
+harness '# projeto' 'APP_DIR=app' 'QUALITY_GATES=required'
 check 0 '[PASS] Arquitetura: 1' test/architecture.sh
 grep -q 'surefire:test@architecture' "${FIXTURE_TRACE}"
 test -f "${FIXTURE}/app/target/architecture-reports/TEST-Fixture.xml"
@@ -247,22 +244,21 @@ check 0 '[PASS] Performance' performance/smoke.sh
 grep -q -- '--summary-export app/target/performance/smoke-summary.json' "${FIXTURE_TRACE}"
 touch "${FIXTURE}/app/src/test/java/DemoApplicationTests.java"
 check 3 '1 classe(s) *Tests ignorada(s)' test/unit.sh
-mv "${FIXTURE}/performance" "${FIXTURE}/performance.off"
+mv "${FIXTURE}/tests" "${FIXTURE}/tests.off"
 check 3 'nenhum cenário k6' performance/smoke.sh
-printf 'APP_DIR=../fora
-' > "${FIXTURE}/.harness"
+# .harness: espaços nas bordas e comentários são aceitos; valores inválidos e código não são.
+harness '  APP_DIR = app   # comentário'
+check 0 '[OK] Compilação concluída.' build/compile.sh
+harness 'APP_DIR=meu app'
+check 1 'valor de APP_DIR com espaço' build/compile.sh
+harness 'APP_DIR=../fora'
 check 1 "APP_DIR '../fora' inválido" build/compile.sh
-printf 'APP_DIR=inexistente
-' > "${FIXTURE}/.harness"
+harness 'APP_DIR=inexistente'
 check 1 "APP_DIR 'inexistente' não existe" verify.sh
-printf 'APP_DIR=app
-COMANDO=$(touch pwned)
-' > "${FIXTURE}/.harness"
+harness 'APP_DIR=app' 'COMANDO=$(touch pwned)'
 check 1 "chave desconhecida 'COMANDO'" verify.sh
 test ! -e "${FIXTURE}/pwned" && test ! -e "${FIXTURE}/bin/pwned"
-printf 'APP_DIR=app
-QUALITY_GATES=talvez
-' > "${FIXTURE}/.harness"
+harness 'APP_DIR=app' 'QUALITY_GATES=talvez'
 check 1 "QUALITY_GATES 'talvez' inválido" quality/coverage.sh
 
 echo "[PASS] Contratos do harness verificados com Maven/Docker simulados. Fixtures: ${FIXTURE}"
