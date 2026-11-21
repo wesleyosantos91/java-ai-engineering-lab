@@ -13,11 +13,22 @@ unit='NOT RUN'
 architecture='NOT RUN'
 integration='NOT RUN'
 coverage='NOT RUN'
+source "${SCRIPT_DIR}/lib/summary.sh"
+# Resumo legível por máquina (CI e agentes); docs/how-to/ci-integration.md.
+VERIFY_SUMMARY="${APP_ROOT}/target/harness/verify-summary.json"
 summary() {
   echo "[RESUMO] Agentes=${agents}; Build=${build}; Unitários=${unit}; Arquitetura=${architecture}; Integração=${integration}; Cobertura=${coverage}; Mutação=NOT RUN"
   echo "[NOT RUN] Mutação (PIT) exige execução explícita: bash scripts/quality/mutation.sh."
+  write_summary "${VERIFY_SUMMARY}" \
+    "$(summary_result "${agents}" "${build}" "${unit}" "${architecture}" "${integration}" "${coverage}")" \
+    "agents=${agents}" "build=${build}" "unit=${unit}" "architecture=${architecture}" \
+    "integration=${integration}" "coverage=${coverage}" 2>/dev/null &&
+    echo "[INFO] Resumo: ${APP_PREFIX}target/harness/verify-summary.json" ||
+    echo "[AVISO] Resumo JSON não gravado em ${VERIFY_SUMMARY}." >&2
 }
 trap summary EXIT
+source "${SCRIPT_DIR}/lib/lock.sh"
+acquire_harness_lock || exit 1
 
 case "${SKIP_INTEGRATION:-0}" in
   0|1) ;;

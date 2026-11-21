@@ -22,6 +22,24 @@ bash scripts/verify.sh            # configuração de agentes, build, unitários
 bash scripts/quality/mutation.sh     # explícito; fora do verify.sh
 ```
 
+## Mapa dos scripts
+
+| Em `scripts/` | Responsabilidade |
+|---|---|
+| `setup.sh`, `verify.sh` | Inspecionar ambiente; fluxo padrão (agentes, build, unitários, arquitetura, integração, cobertura), com resumo JSON em `target/harness/` |
+| `ci.sh` | Ponto de entrada da CI: `verify.sh`, mutação e segredos, com resumo JSON ([integração à CI](ci-integration.md)) |
+| `build/`, `test/`, `quality/coverage.sh` | Etapas individuais do fluxo padrão |
+| `quality/mutation.sh`, `performance/smoke.sh` | PIT e smoke k6; explícitos, fora do `verify.sh` |
+| `quality/enable-gates.sh` | Aplica no app os blocos prontos de quality gates (`--dry-run` ou `--apply`; mudança de build, só com autorização) |
+| `agents/` | `check-config.sh`, `sync-skills.sh`, `list-pending.sh`, `export-kit.sh` e `kit/` (instalador do kit), hooks do Claude <!-- kit:replace-line: | `agents/` | `check-config.sh`, `sync-skills.sh`, `list-pending.sh` e hooks do Claude | --> |
+| `product/check-prd.sh` | Pendências do PRD por responsável; rejeita PRD Aprovado com pendências |
+| `git/` | `guard-branch.sh`, `check-commit-msg.sh` e hooks (`install-hooks.sh`) |
+| `security/scan-secrets.sh` | gitleaks; explícito, no `pre-commit` e no `ci.sh` |
+| `lib/` | Bibliotecas: `.harness` (`app.sh`), pom, suítes, trava de execução (`lock.sh`) e resumo JSON |
+| `harness-tests/` | Testes do próprio harness; `linux.sh` repete os que não usam Maven num contêiner Linux |
+
+Uma execução do harness por repositório de cada vez: os scripts que usam o `target/` adquirem uma trava (`.git/harness.lock`) e falham na hora, com o PID, se outra execução estiver em andamento. A trava de um processo encerrado é tomada automaticamente; `HARNESS_LOCK_DISABLE=1` a desativa (só para depuração).
+
 ## Onde o harness procura o projeto (`.harness`)
 
 Os scripts ficam na raiz, mas o Maven executa no diretório do app, declarado no arquivo `.harness` da raiz (lido por `scripts/lib/app.sh` como chave=valor, sem executar código):
