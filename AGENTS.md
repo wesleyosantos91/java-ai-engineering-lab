@@ -109,7 +109,7 @@ Prefira os scripts de `scripts/` a Maven avulso; use Bash (Git Bash no Windows).
 | `setup.sh`, `verify.sh` | Inspecionar ambiente; fluxo padrão (agentes, build, unitários, arquitetura, integração, cobertura) |
 | `build/`, `test/`, `quality/coverage.sh` | Etapas individuais do fluxo padrão |
 | `quality/mutation.sh`, `performance/smoke.sh` | PIT e smoke k6; explícitos, fora do `verify.sh` |
-| `agents/` | `check-config.sh`, `sync-skills.sh` (stubs `.claude/skills/`), `export-kit.sh` e hooks |
+| `agents/`, `product/` | `check-config.sh`, `sync-skills.sh`, `export-kit.sh`, `init-project.sh`, hooks; `check-prd.sh` |
 | `git/` | `guard-branch.sh`, `check-commit-msg.sh` e hooks (`install-hooks.sh`) |
 | `security/scan-secrets.sh` | gitleaks; explícito e no `pre-commit` |
 | `harness-tests/` | Testes do próprio harness |

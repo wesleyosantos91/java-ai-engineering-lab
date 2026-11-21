@@ -1,6 +1,6 @@
 # Aplicar esta configuração AI-First em um repositório novo
 
-Guia para levar a configuração deste repositório (contexto de agentes, harness, PRD/ADR, governança) a outro projeto. Os passos usam o exportador `scripts/agents/export-kit.sh`, que copia só o que é reutilizável, remove o que é específico deste produto e verifica o resultado.
+Guia para levar a configuração deste repositório (contexto de agentes, harness, PRD/ADR, governança) a outro projeto. Tudo parte do exportador `scripts/agents/export-kit.sh`, que copia só o que é reutilizável, remove o que é específico deste produto e verifica o resultado; o seed público é a mesma exportação, já publicada como template.
 
 ## Pré-requisitos
 
@@ -19,11 +19,36 @@ Guia para levar a configuração deste repositório (contexto de agentes, harnes
 | Documentação de engenharia | `docs/ai/`, `docs/engineering/`, `docs/architecture/` (convenções, regras, índice, template, ADRs 0001 a 0003), `docs/features/` (catálogo vazio e template), `docs/how-to/run-tests.md` | ADRs entram como **Proposta (herdada do kit)**: revise e aceite |
 | Produto | `docs/product/TEMPLATE.md` e `docs/product/prd.md` (cópia do template) | **Escrever** o PRD |
 | Governança e ambiente | `.github/` (CODEOWNERS, issues, PR), `SECURITY.md`, `CONTRIBUTING.md`, `.devcontainer/`, `performance/k6/smoke.js` | **Adaptar** CODEOWNERS, `OWNER/REPO` nos templates e a licença no `CONTRIBUTING.md` |
-| Não vai | `src/main/`, testes de produto, PRD-001, FEAT-0001, `docs/reference/`, ADR-0004, entradas do registro de aprendizados, `README.md`, `LICENSE`, `NOTICE` | Específicos deste produto ou decisão do novo dono |
+| Não vai | `src/main/`, testes de produto, PRD-001, FEAT-0001, `docs/reference/`, ADR-0004, entradas do registro de aprendizados, `README.md`, `LICENSE`, `NOTICE` | Específicos deste produto ou decisão do novo dono. No seed (`--seed`), `README.md`, `LICENSE`, `NOTICE` e uma aplicação mínima em `src/main/` são gerados |
 
 Trechos específicos dentro de documentos genéricos são tratados por marcadores invisíveis nos Markdown deste repositório: `<!-- kit:omit-line -->`, `<!-- kit:replace-line: TEXTO -->` e `<!-- kit:omit-start -->`…`<!-- kit:omit-end -->`. O `scripts/agents/check-config.sh` valida esses marcadores. Ao escrever aqui um trecho que só vale para este produto, marque-o.
 
-## Passos
+## Escolher o caminho
+
+| Caminho | Quando usar |
+|---|---|
+| [Seed público](#via-seed-público) | Projeto novo, do zero: repositório pronto, compilável e sem negócio, em que o time de negócio começa pelo PRD |
+| [Exportador](#via-exportador) | Repositório que já existe, ou personalização do que é copiado |
+
+## Via seed público
+
+O repositório [java-ai-first-seed](https://github.com/wesleyosantos91/java-ai-first-seed) é um *GitHub Template* gerado por este repositório ([ADR-0005](../architecture/adr/0005-public-seed-repository.md)): o kit abaixo mais uma aplicação Spring Boot mínima (`com.example.seed.SeedApplication`, sem endpoints), `LICENSE`/`NOTICE` e um README de uso.
+
+1. *Use this template* no GitHub e clone o repositório criado.
+2. Dê nome ao projeto (pacote, classe principal, `groupId`/`artifactId`, `spring.application.name`, devcontainer e README):
+
+   ```bash
+   bash scripts/agents/init-project.sh --base-package com.acme.orders \
+     --main-class OrdersApplication --project-name "Orders Service"
+   ```
+
+   O script recusa um projeto já inicializado e uma working tree com alterações; não faz commit. Revise com `git diff`.
+3. O time de negócio preenche `docs/product/prd.md`. Cada seção indica quem preenche (Negócio, Engenharia ou Ambos) e se é obrigatória; `bash scripts/product/check-prd.sh` lista o que falta por responsável. Um PRD com Status Aprovado e campos pendentes reprova o `check-config`.
+4. Siga os passos [3. Adaptar](#3-adaptar) a [7. Primeira feature](#7-primeira-feature) abaixo (sem mesclagem: não há `.kit`).
+
+**Manter o seed:** ele só muda por regeneração. A partir deste repositório, `bash scripts/agents/export-kit.sh <diretório-vazio> --seed`, `bash scripts/verify.sh` no resultado, e a publicação da diferença no repositório do seed por pull request. Correções feitas direto no seed se perdem na próxima geração.
+
+## Via exportador
 
 ### 1. Exportar
 
@@ -41,6 +66,7 @@ bash scripts/agents/export-kit.sh ../orders-service \
 | `--base-package` | Troca o pacote base em todos os arquivos, inclusive nas propriedades `app.*` do `pom.xml` e no diretório de `src/test/java` |
 | `--main-class` | Troca o nome da classe Spring Boot e renomeia os testes de infraestrutura (`OrdersApplicationIT`, `TestOrdersApplication`) |
 | `--project-name` | Nome do projeto nos documentos, no README gerado e no `name` do devcontainer |
+| `--seed` | Gera o seed público: nomes fixos (`com.example.seed`, `SeedApplication`, `java-ai-first-seed`), aplicação mínima, `LICENSE`/`NOTICE` e README de uso; não combina com as opções acima |
 
 O exportador monta o kit numa área temporária, roda `scripts/agents/check-config.sh` nele e só então copia para o destino. Se a verificação falhar, o destino não é alterado. Ao final, ele imprime o checklist de adaptação e a lista de arquivos com `[PREENCHER]` ou `[ADAPTAR]`.
 
