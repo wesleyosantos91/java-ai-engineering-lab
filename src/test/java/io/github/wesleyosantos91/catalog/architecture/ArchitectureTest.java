@@ -27,9 +27,13 @@ import org.junit.jupiter.api.Test;
 /**
  * Regras derivadas de docs/architecture/dependency-rules.md, package-conventions.md e ADR-0001.
  *
- * <p>Uma regra sem classes elegíveis é reportada como ignorada (assumption), nunca como aprovada.
+ * <p>Uma regra sem classes elegíveis é ignorada (assumption) com o marcador {@value #NOT_APPLICABLE}: o
+ * harness a reporta como N/A, nunca como aprovada (scripts/test/architecture.sh, ADR-0003).
  */
 class ArchitectureTest {
+
+	/** Prefixo das premissas de regras sem classes elegíveis, lido por scripts/test/architecture.sh. */
+	static final String NOT_APPLICABLE = "[N/A] ";
 
 	private static final String BASE = "io.github.wesleyosantos91.catalog";
 	private static final String FEATURE = BASE + ".feature";
@@ -72,6 +76,13 @@ class ArchitectureTest {
 				.should().dependOnClassesThat().resideInAPackage(PERSISTENCE));
 	}
 
+	/** dependency-rules.md: a única dependência permitida de api dentro da feature é service. */
+	@Test
+	void apiDoesNotDependOnDomain() {
+		checkWhenEligible("api", inPackage("api"), noClasses().that().resideInAPackage(API)
+				.should().dependOnClassesThat().resideInAPackage(DOMAIN));
+	}
+
 	@Test
 	void apiDoesNotExecuteSql() {
 		checkWhenEligible("api", inPackage("api"), noClasses().that().resideInAPackage(API)
@@ -96,27 +107,27 @@ class ArchitectureTest {
 
 	@Test
 	void featuresAreFreeOfCycles() {
-		assumeTrue(features().size() >= 2, "Sem classes elegíveis: são necessárias ao menos duas features.");
+		assumeTrue(features().size() >= 2, NOT_APPLICABLE + "Sem classes elegíveis: são necessárias ao menos duas features.");
 		slices().matching(FEATURE + ".(*)..").should().beFreeOfCycles().check(CLASSES);
 	}
 
 	@Test
 	void featureLayersAreFreeOfCycles() {
 		boolean eligible = layersByFeature().values().stream().anyMatch(layers -> layers.size() >= 2);
-		assumeTrue(eligible, "Sem classes elegíveis: nenhuma feature possui ao menos dois packages internos.");
+		assumeTrue(eligible, NOT_APPLICABLE + "Sem classes elegíveis: nenhuma feature possui ao menos dois packages internos.");
 		slices().matching(FEATURE + ".(*).(*)..").should().beFreeOfCycles().check(CLASSES);
 	}
 
 	@Test
 	void featuresDoNotAccessPersistenceOfOtherFeatures() {
 		assumeTrue(features().size() >= 2 && stream().anyMatch(inPackage("persistence")),
-				"Sem classes elegíveis: são necessárias duas features e ao menos uma classe de persistence.");
+				NOT_APPLICABLE + "Sem classes elegíveis: são necessárias duas features e ao menos uma classe de persistence.");
 		classes().that().resideInAPackage(FEATURE + "..").should(notDependOnPersistenceOfAnotherFeature())
 				.check(CLASSES);
 	}
 
 	private static void checkWhenEligible(String scope, Predicate<JavaClass> eligible, ArchRule rule) {
-		assumeTrue(stream().anyMatch(eligible), "Sem classes elegíveis em " + scope + ".");
+		assumeTrue(stream().anyMatch(eligible), NOT_APPLICABLE + "Sem classes elegíveis em " + scope + ".");
 		rule.check(CLASSES);
 	}
 
