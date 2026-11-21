@@ -53,6 +53,10 @@ cat > "${app}/pom.xml" <<'XML'
 	<groupId>com.acme</groupId>
 	<artifactId>orders</artifactId>
 	<properties><java.version>17</java.version></properties>
+	<dependencies>
+		<dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-webmvc</artifactId></dependency>
+		<dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-webmvc-test</artifactId></dependency>
+	</dependencies>
 </project>
 XML
 printf '#!/usr/bin/env bash\necho "mvn $*"\n' > "${app}/mvnw"
@@ -75,7 +79,33 @@ assert test ! -e "${dest}/tests"
 assert test ! -e "${dest}/app/pom.xml.kit"
 assert grep -qx 'APP_DIR=app' "${dest}/.harness"
 assert grep -qx 'QUALITY_GATES=optional' "${dest}/.harness"
-assert grep -q 'Detectado em app/pom.xml: Java 17, Spring Boot 4.2.0' "${dest}/AGENTS.md"
+# Projeto autossuficiente: sem as ferramentas do kit e sem referência a este repositório ou ao seed.
+assert test ! -e "${dest}/scripts/agents/export-kit.sh"
+assert test ! -e "${dest}/scripts/harness-tests/export-kit.sh"
+assert test ! -e "${dest}/scripts/agents/init-project.sh"
+assert test ! -e "${dest}/scripts/lib/rename.sh"
+none 'java-ai-first-seed|java-ai-engineering-lab|export-kit|init-project|herdad'
+# Seções prontas: só os campos [PREENCHER-...] ficam para preencher, todos com responsável.
+assert grep -qF -- '- Java 17, Spring Boot 4.2.0, Maven via Wrapper em `app/` (detectado em `app/pom.xml`; starters: webmvc).' "${dest}/AGENTS.md"
+assert grep -q '^Propósito: \[PREENCHER-NEGÓCIO:' "${dest}/AGENTS.md"
+assert grep -q '^- Persistência e integração: \[PREENCHER-ENGENHARIA:' "${dest}/AGENTS.md"
+assert grep -qF '`list-pending.sh`, hooks; `check-prd.sh`' "${dest}/AGENTS.md"
+assert grep -q '^## Revisão neste projeto' "${dest}/docs/architecture/adr/0001-architecture-principles.md"
+assert grep -q '^## Revisão neste projeto' "${dest}/docs/architecture/adr/0003-test-suites-and-quality-gates.md"
+assert grep -q 'Proposta (revisar)' "${dest}/docs/architecture/adr/README.md"
+assert grep -q '^## Visão geral' "${dest}/README.md"
+assert grep -q '^## Como executar' "${dest}/README.md"
+gates_doc="${dest}/docs/how-to/enable-quality-gates.md"
+assert grep -q '^## Blocos prontos para este projeto' "${gates_doc}"
+assert grep -q '<app.basePackage>com.acme.orders</app.basePackage>' "${gates_doc}"
+assert grep -q '<app.mainClass>OrdersApplication</app.mainClass>' "${gates_doc}"
+assert grep -q '<artifactId>pitest-maven</artifactId>' "${gates_doc}"
+assert grep -q '<artifactId>archunit</artifactId>' "${gates_doc}"
+assert grep -q '^package com.acme.orders.architecture;' "${gates_doc}"
+if grep -q 'spring-boot-maven-plugin\|<java.version>' "${gates_doc}"; then echo '[FAIL] bloco de pom com item que o app já tem' >&2; exit 1; fi
+expect 3 'Projeto com' bash "${dest}/scripts/agents/list-pending.sh"
+if grep -q 'Sem responsável' "${WORK}/output"; then cat "${WORK}/output"; echo '[FAIL] campo sem responsável' >&2; exit 1; fi
+grep -Fq '    - AGENTS.md:' "${WORK}/output"
 assert grep -q 'com.acme.orders' "${dest}/.agents/skills/architecture-guard/SKILL.md"
 assert grep -q '^# Orders Service' "${dest}/README.md"
 assert grep -q '"name": "orders-service"' "${dest}/.devcontainer/devcontainer.json"
@@ -83,7 +113,7 @@ assert grep -q '"Edit(./.github/\*\*)"' "${dest}/.claude/settings.json"
 assert test -f "${dest}/docs/product/prd.md"
 assert test -f "${dest}/docs/how-to/enable-quality-gates.md"
 assert test -f "${dest}/.claude/skills/feature-delivery/SKILL.md"
-assert grep -q 'Proposta (herdada do kit' "${dest}/docs/architecture/adr/0001-architecture-principles.md"
+assert grep -q 'Proposta — decidir na seção "Revisão neste projeto"' "${dest}/docs/architecture/adr/0001-architecture-principles.md"
 none 'io\.github\.wesleyosantos91|wesleyosantos91/java-ai-engineering-lab|JavaAiEngineeringLab|Java AI Engineering Lab|Product Catalog'
 none 'FEAT-0001-create-product|0004-ai-first|reference/api|LL-0[0-9]{3}|<!-- kit:'
 
@@ -170,13 +200,18 @@ assert grep -q '<app.basePath>com/acme/orders</app.basePath>' "${dest}/app/pom.x
 assert grep -q 'name: orders-service' "${dest}/app/src/main/resources/application.yaml"
 assert grep -q '"name": "orders-service"' "${dest}/.devcontainer/devcontainer.json"
 assert grep -q '^# Orders Service' "${dest}/README.md"
-# Os scripts guardam os nomes do seed como constantes e não são reescritos.
-assert grep -q '^SEED_PACKAGE=com.example.seed$' "${dest}/scripts/agents/init-project.sh"
-assert grep -q 'seed/SeedApplication.java' "${dest}/scripts/harness-tests/export-kit.sh"
+# Uso único: a inicialização se remove, e o projeto não depende do seed.
+assert test ! -e "${dest}/scripts/agents/init-project.sh"
+assert test ! -e "${dest}/scripts/lib/rename.sh"
+assert test ! -e "${dest}/scripts/agents/export-kit.sh"
+none 'init-project|export-kit|herdad'
+assert grep -qF '`list-pending.sh`, hooks; `check-prd.sh`' "${dest}/AGENTS.md"
+assert grep -q '^## Blocos prontos para este projeto' "${dest}/docs/how-to/enable-quality-gates.md"
+assert grep -q '^package com.acme.orders.architecture;' "${dest}/docs/how-to/enable-quality-gates.md"
+assert grep -q '^## Visão geral' "${dest}/README.md"
 git -C "${dest}" add -A
 expect 0 '' git -C "${dest}" diff --cached --check
 commit "${dest}" 'chore: init'
-expect 1 'Projeto já inicializado' bash "${init[@]}" --project-name 'Orders Service'
 expect 0 '[PASS] Configuração de agentes verificada.' bash "${dest}/scripts/agents/check-config.sh"
 expect 0 '[PASS] Contratos do harness verificados' bash "${dest}/scripts/harness-tests/harness.sh"
 

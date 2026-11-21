@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Compartilhado por scripts/agents/export-kit.sh e scripts/agents/init-project.sh; não deve ser
+# Compartilhado pelo exportador do kit e pela inicialização do seed (scripts/agents/); não deve ser
 # executado diretamente. Troca pacote base, classe principal e textos literais numa árvore.
 #
 # Os scripts de exportação e inicialização (e o teste deles) ficam fora da troca: guardam os nomes
-# do seed e do produto como constantes, e reescrevê-los quebraria a próxima execução.
-RENAME_EXCLUDED=(scripts/agents/export-kit.sh scripts/agents/init-project.sh scripts/lib/rename.sh
-  scripts/harness-tests/export-kit.sh)
+# do seed e do produto como constantes, e reescrevê-los quebraria a próxima execução. Caminhos
+# relativos a scripts/ (alguns não existem no seed nem no projeto gerado).
+RENAME_EXCLUDED=(agents/export-kit.sh agents/init-project.sh lib/rename.sh harness-tests/export-kit.sh)
 
 # Arquivos de texto sob <raiz> que contêm <literal>, exceto .git, target e os excluídos.
 rename_text_files() {
@@ -13,7 +13,7 @@ rename_text_files() {
   while IFS= read -r file; do
     [[ -n "${file}" ]] || continue
     rel="${file#"${root}"/}" skip=0
-    for excluded in "${RENAME_EXCLUDED[@]}"; do [[ "${rel}" == "${excluded}" ]] && skip=1; done
+    for excluded in "${RENAME_EXCLUDED[@]}"; do [[ "${rel}" == "scripts/${excluded}" ]] && skip=1; done
     (( skip )) || printf '%s\n' "${file}"
   done < <(grep -rlIF --exclude-dir=.git --exclude-dir=target -- "${literal}" "${root}" || true)
 }
@@ -63,4 +63,51 @@ rename_main_class() {
 # Nome do projeto em minúsculas e hifens (artifactId, devcontainer, spring.application.name).
 project_slug() {
   printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+|-+$//g'
+}
+
+# README do projeto com as seções prontas; só os campos [PREENCHER-...] ficam para preencher.
+# Uso: write_project_readme <arquivo> <nome do projeto>
+write_project_readme() {
+  local file="$1" name="$2"
+  cat > "${file}" <<README
+# ${name}
+
+> **Quem preenche:** Negócio (Visão geral) e Engenharia (Licença). O restante já vem pronto. Pendências do projeto, por responsável: \`bash scripts/agents/list-pending.sh\`.
+
+## Visão geral
+
+[PREENCHER-NEGÓCIO: o que o sistema faz, para quem e qual problema resolve, em duas ou três frases.]
+
+Requisitos e critérios de aceitação: [PRD](docs/product/prd.md).
+
+## Estrutura
+
+| Diretório | Conteúdo |
+|---|---|
+| \`app/\` | Projeto Maven (\`app/pom.xml\`) |
+| \`infra/\`, \`tests/\` | Infraestrutura e testes fora do app |
+| \`docs/\` | PRD, decisões de arquitetura (ADRs), features e guias |
+| \`AGENTS.md\`, \`.agents/\`, \`scripts/\` | Instruções e skills dos agentes de IA e harness de verificação |
+| \`.github/\` | Workflows e templates, mantidos pelo time de DevOps |
+
+Regras por diretório: [layout do repositório](docs/architecture/repository-layout.md).
+
+## Como executar
+
+\`\`\`bash
+bash scripts/setup.sh                  # Java, Maven Wrapper, Docker e hooks
+bash scripts/verify.sh                 # agentes, build, testes e quality gates
+(cd app && ./mvnw spring-boot:run)     # aplicação local
+\`\`\`
+
+Detalhes e diagnóstico: [executar e diagnosticar testes](docs/how-to/run-tests.md).
+
+## Contribuição
+
+[CONTRIBUTING.md](CONTRIBUTING.md). Instruções para agentes de IA: [AGENTS.md](AGENTS.md).
+
+## Licença
+
+[PREENCHER-ENGENHARIA: licença do projeto, por exemplo Apache-2.0 ou proprietária.]
+README
 }

@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-# Inicializa um repositório criado a partir do seed público (scripts/agents/export-kit.sh --seed):
-# troca pacote base, classe principal, identidade Maven e nome do projeto, substitui o
-# README do seed e verifica a configuração dos agentes. Não faz commit.
+# Inicializa um repositório criado a partir do seed público (GitHub Template): troca pacote base,
+# classe principal, identidade Maven e nome do projeto, troca o README do seed pelo do projeto
+# (seções prontas) e verifica a configuração dos agentes. Uso único: ao final, remove a si mesmo e
+# scripts/lib/rename.sh, para que o projeto não dependa do seed. Não faz commit.
 #
 # Uso: bash scripts/agents/init-project.sh --base-package <pacote> --main-class <Classe>
 #                                          --project-name <nome>
@@ -17,7 +18,7 @@ source "${SCRIPT_DIR}/../lib/app.sh" || exit 1
 source "${SCRIPT_DIR}/../lib/pom.sh"
 source "${SCRIPT_DIR}/../lib/rename.sh"
 
-# Mesmos nomes de scripts/agents/export-kit.sh (modo --seed).
+# Mesmos nomes do exportador do kit (modo --seed), no repositório de referência.
 SEED_PACKAGE=com.example.seed
 SEED_MAIN=SeedApplication
 SEED_NAME='Java AI-First Seed'
@@ -66,17 +67,23 @@ rename_literal "${ROOT_DIR}" "${SEED_NAME}" "${project_name}"
 # groupId do projeto: o pacote base sem o último segmento (com.acme.orders -> com.acme).
 sed -i "/<\/parent>/,/<artifactId>/ s#<groupId>[^<]*</groupId>#<groupId>${new_package%.*}</groupId>#" "${APP_ROOT}/pom.xml"
 
-printf '# %s\n\n[PREENCHER: o que o projeto faz e como começar.]\n\nRequisitos: [PRD](docs/product/prd.md). Instruções para agentes de IA: [AGENTS.md](AGENTS.md). Como contribuir: [CONTRIBUTING.md](CONTRIBUTING.md).\n' \
-  "${project_name}" > README.md
+write_project_readme README.md "${project_name}"
+
+# A inicialização é única: o projeto não depende do seed depois dela. O script e a biblioteca de
+# renomeação saem do repositório (o histórico Git os preserva), e o AGENTS.md deixa de citá-los.
+sed -i 's/`list-pending.sh`, `init-project.sh`, hooks/`list-pending.sh`, hooks/' AGENTS.md
+rm -f scripts/agents/init-project.sh scripts/lib/rename.sh
 
 if ! bash scripts/agents/check-config.sh >/dev/null 2>&1; then
   bash scripts/agents/check-config.sh >&2 || true
-  echo "[FAIL] check-config reprovado após a inicialização; revise com git diff (git checkout -- . desfaz)." >&2
+  echo "[FAIL] check-config reprovado após a inicialização; revise com git status e git diff (git checkout -- . && git clean -fd desfaz)." >&2
   exit 1
 fi
 
 echo "[PASS] ${project_name} inicializado: pacote ${new_package}, classe ${new_main}, artifactId ${slug}."
-echo "[INFO] Próximos passos (revise com git diff antes do primeiro commit numa branch de trabalho):"
-echo "  - Negócio: preencher docs/product/prd.md; pendências por responsável: bash scripts/product/check-prd.sh"
-echo "  - Engenharia: AGENTS.md §1 e §2, ADRs herdados, LICENSE/NOTICE. .github/ é configurado pelo time de DevOps."
+echo "[INFO] init-project.sh e rename.sh foram removidos (uso único). Revise com git status e git diff antes do primeiro commit numa branch de trabalho."
+echo "[INFO] Próximos passos (seções prontas; só os campos [PREENCHER-...] ficam para preencher):"
+echo "  - Negócio: docs/product/prd.md (bash scripts/product/check-prd.sh), propósito no AGENTS.md §1 e visão geral no README.md."
+echo "  - Engenharia: seção \"Revisão neste projeto\" dos ADRs 0001 a 0003 e licença. .github/ é configurado pelo time de DevOps."
 echo "  - Harness: bash scripts/git/install-hooks.sh; bash scripts/setup.sh; bash scripts/verify.sh"
+echo "  - Pendências por responsável: bash scripts/agents/list-pending.sh"

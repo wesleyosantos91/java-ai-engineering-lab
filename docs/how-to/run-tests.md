@@ -31,7 +31,9 @@ Os scripts ficam na raiz, mas o Maven executa no diretório do app, declarado no
 | `APP_DIR` | Caminho relativo, sem `..` (padrão `.`) | Onde ficam `pom.xml`, `mvnw`, `src/` e `target/`. Neste repositório, `.`; em projetos criados pelo kit ou pelo seed, sempre `app` ([layout do repositório](../architecture/repository-layout.md)) |
 | `QUALITY_GATES` | `required` (padrão) ou `optional` | Gate não configurado no pom do app (sem a execução `architecture`, o Failsafe, o JaCoCo `coverage-check`, o `pitest-maven` ou as propriedades `app.*`): `required` = FAIL; `optional` = SKIP, com o motivo e o [guia para ativar](enable-quality-gates.md) |
 
-Os caminhos `target/...` deste guia são relativos ao `APP_DIR`. O `check-config.sh` rejeita chaves desconhecidas e, fora deste repositório de referência, um `APP_DIR` diferente de `app`. O `unit.sh` avisa quando há classes `*Tests` (padrão do Spring Initializr), que a convenção não executa.
+| `REPOSITORY_ROLE` | `project` (padrão) ou `reference` | Só `reference` (este repositório) aceita `APP_DIR` diferente de `app` |
+
+Os caminhos `target/...` deste guia são relativos ao `APP_DIR`. O `check-config.sh` rejeita chaves e valores inválidos e, em projetos, um `APP_DIR` diferente de `app`. O `unit.sh` avisa quando há classes `*Tests` (padrão do Spring Initializr), que a convenção não executa.
 
 ## Escolher a suíte
 
@@ -98,12 +100,15 @@ Mockito 5.23.0, transitivo dos starters de teste, é carregado com `-javaagent` 
 
 Isso segue a [orientação oficial do Mockito 5.23.0 para Java 21+](https://github.com/mockito/mockito/blob/v5.23.0/mockito-core/src/main/java/org/mockito/Mockito.java): não depender do autoattach dinâmico. A validação isolada usa `-XX:-EnableDynamicAgentLoading` e um mock de classe final. Execuções pela IDE que não deleguem a Maven precisam configurar o mesmo agent no runner. O aviso CDS sobre bootstrap classpath pode permanecer; não é o aviso de carregamento dinâmico e não foi suprimido.
 
-## Verificar o PRD
+## Verificar o PRD e as pendências do projeto
 
 ```bash
+bash scripts/agents/list-pending.sh           # todos os campos a preencher, por responsável
 bash scripts/product/check-prd.sh             # docs/product/prd.md
 bash scripts/product/check-prd.sh <arquivo>   # outro PRD
 ```
+
+O `list-pending.sh` percorre os documentos Markdown (exceto templates, stubs `.claude/`, o app, blocos de código e comentários HTML) e agrupa por responsável os campos `[PREENCHER-NEGÓCIO: ...]`, `[PREENCHER-ENGENHARIA: ...]` e os sem responsável. Retorna `0` sem pendências e `3` (SKIP) com pendências.
 
 Lista os campos `[PREENCHER-NEGÓCIO: ...]`, `[PREENCHER-ENGENHARIA: ...]` e `[PREENCHER...]` restantes, por responsável, seção e linha; campos citados em código (entre crases) são exemplos e não contam. Retorna `0` sem pendências, `3` (SKIP) com o PRD ausente ou em elaboração e `1` quando o Status do cabeçalho começa com "Aprovado" e ainda há campos pendentes ou nenhum critério `### CA-NN`. O `agents/check-config.sh` só falha neste último caso, para que um PRD em elaboração não bloqueie o fluxo.
 
@@ -124,10 +129,9 @@ bash scripts/harness-tests/agent-config.sh
 
 # Repositório Git temporário: mensagens de commit, coautoria, --range e hooks instalados.
 bash scripts/harness-tests/git-hooks.sh
-
-# Destinos temporários: kit de adoção, seed (--seed) e init-project.sh num projeto criado do seed.
-bash scripts/harness-tests/export-kit.sh
 ```
+
+O exportador do kit tem teste próprio, em destinos temporários: `bash scripts/harness-tests/export-kit.sh` (kit só de configuração, seed e `init-project.sh` num projeto criado do seed). <!-- kit:omit-line -->
 
 A primeira verificação simula `agents/check-config.sh`, que tem teste próprio (a quarta verificação), e cobre ausência de suítes, falhas Maven/Docker, XML ausente/obsoleto, zero testes, testes ignorados, resumo e interrupção de etapas. A segunda verifica Surefire com Docker inacessível, Mockito inline sem attach dinâmico, Failsafe com PostgreSQL sem repetir unitários e uma falha deliberada de IT que deve retornar erro em `verify`. Essa falha esperada só existe na cópia e o script retorna sucesso apenas se ela for rejeitada.
 

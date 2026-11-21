@@ -111,6 +111,10 @@ include=(
 )
 (cd "${ROOT_DIR}" && git ls-files -z --cached --others --exclude-standard -- "${include[@]}" |
   tar --null -T - -cf -) | (cd "${STAGE}" && tar -xf -)
+# Ferramentas do kit ficam neste repositório: o projeto gerado não depende delas. O seed leva só a
+# inicialização (init-project.sh e rename.sh), que se remove depois de executada.
+rm -f "${STAGE}/scripts/agents/export-kit.sh" "${STAGE}/scripts/harness-tests/export-kit.sh"
+(( seed )) || rm -f "${STAGE}/scripts/agents/init-project.sh" "${STAGE}/scripts/lib/rename.sh"
 
 # 2. Marcadores do kit em todos os Markdown.
 while IFS= read -r -d '' file; do
@@ -129,13 +133,28 @@ while IFS= read -r -d '' file; do
     { emit($0) }' "${file}" > "${file}.tmp" && mv "${file}.tmp" "${file}"
 done < <(find "${STAGE}" -type f -name '*.md' -print0)
 
-# 3. ADRs herdados entram como Proposta, para revisão no novo repositório.
-inherited='Proposta (herdada do kit de configuração; revise e aceite)'
+# 3. ADRs iniciais entram como Proposta, com a seção de revisão pronta para o projeto decidir.
+proposed='Proposta — decidir na seção "Revisão neste projeto"'
 adr_dir="${STAGE}/docs/architecture/adr"
-sed -i "/^## Status$/,/^## / s/^Aceita$/${inherited}/" "${adr_dir}/0001-architecture-principles.md"
-sed -i "s/^- \*\*Status:\*\* Proposta$/- **Status:** ${inherited}/; s/^- \*\*Responsável pela decisão:\*\* .*/- **Responsável pela decisão:** [PREENCHER]/" \
+sed -i "/^## Status$/,/^## / s/^Aceita$/${proposed}/" "${adr_dir}/0001-architecture-principles.md"
+sed -i "s/^- \*\*Status:\*\* Proposta$/- **Status:** ${proposed}/; s/^- \*\*Responsável pela decisão:\*\* .*/- **Responsável pela decisão:** ver \"Revisão neste projeto\"/" \
   "${adr_dir}"/000[23]-*.md
-sed -i -E 's/^(\| \[000[1-3]\]\([^)]*\) \| [^|]* \| )[^|]*( \| )[^|]*( \|)$/\1Proposta (herdada do kit)\2—\3/' "${adr_dir}/README.md"
+sed -i -E 's/^(\| \[000[1-3]\]\([^)]*\) \| [^|]* \| )[^|]*( \| )[^|]*( \|)$/\1Proposta (revisar)\2—\3/' "${adr_dir}/README.md"
+for adr in "${adr_dir}"/000[1-3]-*.md; do
+  cat >> "${adr}" <<'EOF'
+
+## Revisão neste projeto
+
+> **Quem preenche:** Engenharia · **Obrigatória** antes da primeira feature. Registre a decisão aqui e no [índice](README.md). Para mudar o conteúdo da decisão, registre um novo ADR que a substitua.
+
+| Campo | Valor |
+|---|---|
+| Decisão | [PREENCHER-ENGENHARIA: Aceita, Rejeitada ou Substituída por ADR-NNNN] |
+| Responsável | [PREENCHER-ENGENHARIA: nome e papel] |
+| Data | [PREENCHER-ENGENHARIA: AAAA-MM-DD] |
+| Ajustes para este projeto | [PREENCHER-ENGENHARIA: diferenças de stack ou de escopo, ou "Nenhum"] |
+EOF
+done
 
 # 4. PRD inicial a partir do template.
 cp "${STAGE}/docs/product/TEMPLATE.md" "${STAGE}/docs/product/prd.md"
@@ -253,7 +272,7 @@ Detalhes e regras por diretório: [layout do repositório](docs/architecture/rep
 
 ## Origem
 
-Este repositório é gerado por `scripts/agents/export-kit.sh --seed` a partir do repositório de referência [java-ai-engineering-lab](https://github.com/wesleyosantos91/java-ai-engineering-lab). Correções no chassi devem ser feitas lá e regeneradas aqui.
+Este template é gerado pelo exportador do kit (modo `--seed`) do repositório de referência [java-ai-engineering-lab](https://github.com/wesleyosantos91/java-ai-engineering-lab). Correções no chassi são feitas lá e chegam aqui por regeneração. O projeto criado pelo `init-project.sh` não depende deste template nem do repositório de referência.
 
 ## Licença
 
@@ -266,21 +285,76 @@ if (( seed )); then write_seed_chassis; fi
 #    textos da configuração; o app de destino não é tocado). Nome do projeto nos documentos.
 rename_package "${STAGE}" "${old_package}" "${new_package}" "${DEST_APP}"
 rename_main_class "${STAGE}" "${old_main}" "${new_main}" "${DEST_APP}"
-name="${project_name:-[PREENCHER: nome do projeto]}"
+name="${project_name:-[PREENCHER-NEGÓCIO: nome do projeto]}"
 rename_literal "${STAGE}" 'Java AI Engineering Lab' "${name}"
 slug="$(project_slug "${project_name:-app}")"
 # Só a primeira ocorrência: o nome do contêiner, não de outros objetos do arquivo.
 sed -i "0,/\"name\": \"[^\"]*\"/ s##\"name\": \"${slug:-app}\"#" "${STAGE}/.devcontainer/devcontainer.json"
 
-# 7. Stack no AGENTS.md §2: a do seed é a deste repositório; num projeto existente, a do app.
+# 7. AGENTS.md com as seções do projeto prontas: propósito (negócio), stack detectada no app
+#    (engenharia só completa o que não dá para detectar) e scripts que existem no destino.
+tools='`check-config.sh`, `sync-skills.sh`, `list-pending.sh`, hooks; `check-prd.sh`'
+(( ! seed )) || tools='`check-config.sh`, `sync-skills.sh`, `list-pending.sh`, `init-project.sh`, hooks; `check-prd.sh`'
+purpose='Propósito: [PREENCHER-NEGÓCIO: o que o sistema faz e para quem, em uma frase]. Requisitos: [PRD](docs/product/prd.md).'
+stack='' persistence=''
 if (( ! seed )); then
-  stack="[ADAPTAR: stack do projeto. Detectado em app/pom.xml: Java ${java_version:-?}, Spring Boot ${boot_version:-?}; Maven via Wrapper em app/.]"
-  persistence='[ADAPTAR: persistência e testes de integração. Os ADRs herdados assumem Spring JDBC, PostgreSQL, Flyway e Testcontainers.]'
-  awk -v stack="- ${stack}" -v persistence="- ${persistence}" '
-    /^- Java [0-9]+, Spring Boot / { print stack; next }
-    /^- Spring JDBC com SQL explícito/ { print persistence; next }
-    { print }' "${STAGE}/AGENTS.md" > "${STAGE}/AGENTS.md.tmp" && mv "${STAGE}/AGENTS.md.tmp" "${STAGE}/AGENTS.md"
+  starters=''
+  [[ ! -f "${dest_pom:-}" ]] || starters="$(sed -n 's#.*<artifactId>spring-boot-starter-\([a-z-]*\)</artifactId>.*#\1#p' "${dest_pom}" |
+    grep -v -e '-test$' -e '^parent$' | sort -u | paste -sd, - | sed 's/,/, /g' || true)"
+  if [[ -n "${java_version}" && -n "${boot_version}" ]]; then
+    stack="- Java ${java_version}, Spring Boot ${boot_version}, Maven via Wrapper em \`app/\` (detectado em \`app/pom.xml\`; starters: ${starters:-nenhum})."
+  else
+    stack='- [PREENCHER-ENGENHARIA: Java, Spring Boot e build do app (app/pom.xml não encontrado na exportação)].'
+  fi
+  persistence='- Persistência e integração: [PREENCHER-ENGENHARIA: banco, migrações e testes de integração; os ADRs propostos sugerem Spring JDBC, PostgreSQL, Flyway e Testcontainers].'
 fi
+awk -v tools="${tools}" -v purpose="${purpose}" -v stack="${stack}" -v persistence="${persistence}" '
+  /^\[PREENCHER: propósito do projeto\]\.?$/ { print purpose; next }
+  stack != "" && /^- Java [0-9]+, Spring Boot / { print stack; next }
+  persistence != "" && /^- Spring JDBC com SQL explícito/ { print persistence; next }
+  /^\| `agents\/`, `product\/` \|/ { print "| `agents/`, `product/` | " tools " |"; next }
+  { print }' "${STAGE}/AGENTS.md" > "${STAGE}/AGENTS.md.tmp" && mv "${STAGE}/AGENTS.md.tmp" "${STAGE}/AGENTS.md"
+
+# 7b. Guia de quality gates com os blocos prontos para este projeto: extraídos do pom e dos
+#     testes de infraestrutura deste repositório, com o pacote e a classe do projeto.
+write_gate_blocks() {
+  local guide="${STAGE}/docs/how-to/enable-quality-gates.md" pom="${APP_ROOT}/pom.xml"
+  local test_root="${APP_ROOT}/src/test/java/${old_path}" new_path="${new_package//.//}"
+  local deps='archunit|junit-platform-launcher|spring-boot-testcontainers|testcontainers-junit-jupiter|testcontainers-postgresql'
+  adapt() { sed -e "s#${old_package//./\\.}#${new_package}#g" -e "s#${old_path}#${new_path}#g" -e "s#${old_main}#${new_main}#g"; }
+  code() { printf '\n```%s\n' "$1"; cat; printf '```\n'; }
+  {
+    printf '\n## Blocos prontos para este projeto\n\n'
+    printf 'Gerados para o pacote `%s` e a classe `%s`. Copie cada bloco para o lugar indicado e ajuste só o que o projeto não usar.\n' "${new_package}" "${new_main}"
+    printf '\n### 1. `app/pom.xml`: propriedades (dentro de `<properties>`)\n'
+    awk '/<properties>/ { on = 1; next } /<\/properties>/ { on = 0 } on && !/<java.version>/' "${pom}" | adapt | code xml
+    printf '\n### 2. `app/pom.xml`: dependências de teste (dentro de `<dependencies>`)\n\nSe o app não usa banco, omita as três dependências de Testcontainers.\n'
+    awk -v deps="^(${deps})$" '
+      /<dependency>/ { block = ""; on = 1 }
+      on { block = block $0 "\n" }
+      on && /<artifactId>/ { id = $0; gsub(/.*<artifactId>|<\/artifactId>.*/, "", id) }
+      /<\/dependency>/ && on { if (id ~ deps) printf "%s", block; on = 0 }' "${pom}" | code xml
+    printf '\n### 3. `app/pom.xml`: plugins (dentro de `<build><plugins>`)\n'
+    awk '
+      /<plugin>/ && depth == 0 { block = ""; on = 1 }
+      on { block = block $0 "\n" }
+      on && /<artifactId>spring-boot-maven-plugin<\/artifactId>/ { skip = 1 }
+      /<plugin>/ { depth++ } /<\/plugin>/ { depth-- }
+      on && depth == 0 { if (!skip) printf "%s", block; on = 0; skip = 0 }' "${pom}" | adapt | code xml
+    printf '\n### 4. Classes de teste em `app/src/test/java/%s/`\n' "${new_path}"
+    local file
+    for file in architecture/ArchitectureTest.java TestcontainersConfiguration.java "${old_main}IT.java" "Test${old_main}.java"; do
+      [[ -f "${test_root}/${file}" ]] || continue
+      printf '\n`%s`:\n' "$(adapt <<<"${file}")"
+      adapt < "${test_root}/${file}" | code java
+    done
+    printf '\nSem banco, troque `%sIT` por um teste de contexto sem Testcontainers e não crie `TestcontainersConfiguration` nem `Test%s`:\n' "${new_main}" "${new_main}"
+    printf 'package %s;\n\nimport org.junit.jupiter.api.Test;\nimport org.springframework.boot.test.context.SpringBootTest;\n\n@SpringBootTest\nclass %sIT {\n\n\t@Test\n\tvoid contextLoads() {\n\t}\n\n}\n' \
+      "${new_package}" "${new_main}" | code java
+    printf '\n### 5. Ativar\n\nCom os blocos aplicados e `bash scripts/verify.sh` verde, troque `QUALITY_GATES=optional` por `QUALITY_GATES=required` no `.harness`.\n'
+  } >> "${guide}"
+}
+write_gate_blocks
 
 # 8. .harness: projeto Maven em app/; gates obrigatórios no seed, opcionais num projeto existente
 #    até o pom do app ser configurado.
@@ -293,8 +367,7 @@ if [[ -e "${DEST}/README.md" ]]; then
   # O README do destino é mantido; a verificação abaixo usa o estado final real.
   cp -p "${DEST}/README.md" "${STAGE}/README.md"
 elif [[ ! -e "${STAGE}/README.md" ]]; then
-  printf '# %s\n\n[PREENCHER: o que o projeto faz e como começar.]\n\nRequisitos: [PRD](docs/product/prd.md). Instruções para agentes de IA: [AGENTS.md](AGENTS.md). Como contribuir: [CONTRIBUTING.md](CONTRIBUTING.md).\n' \
-    "${name}" > "${STAGE}/README.md"
+  write_project_readme "${STAGE}/README.md" "${name}"
 fi
 
 # 9. Fora do seed, o kit só pode conter configuração: nenhum arquivo sob app/, infra/, tests/
@@ -348,16 +421,11 @@ if (( seed )); then
 fi
 echo "[INFO] Projeto em ${DEST_APP}/: $( [[ -f "${DEST}/${DEST_APP}/pom.xml" ]] && echo "pom.xml encontrado" || echo "pom.xml AUSENTE (o harness exige ${DEST_APP}/pom.xml)" ); classe ${detected_main:-não detectada} em ${detected_package:-pacote não detectado}; Java ${java_version:-?}; Spring Boot ${boot_version:-?}."
 echo "[INFO] Nada foi gravado em ${DEST_APP}/, infra/, tests/ nem .github/ (gerido por DevOps)."
-echo "[INFO] Checklist de adaptação (guia completo no repositório de origem: docs/how-to/adopt-in-new-repository.md):"
+echo "[INFO] Próximos passos no projeto (seções prontas; só os campos [PREENCHER-...] ficam para preencher):"
 [[ -n "${detected_package}" ]] || echo "  - Pacote base não detectado; os textos usam ${new_package}: ajuste skills e docs."
-echo "  - AGENTS.md §1 (propósito) e §2 (stack, marcado com [ADAPTAR]); CLAUDE.md não precisa de ajuste."
-echo "  - Revise e aceite os ADRs herdados (0001 a 0003); o time de negócio preenche docs/product/prd.md."
-echo "  - Gates opcionais (.harness): para ativá-los, siga docs/how-to/enable-quality-gates.md e use QUALITY_GATES=required."
-echo "  - Licença na seção \"Licença\" do CONTRIBUTING.md."
-echo "  - Hooks: bash scripts/git/install-hooks.sh (exige repositório Git); depois bash scripts/verify.sh."
-# Pendências reais: fora dos templates e de trechos de código (`[PREENCHER...]` citado como exemplo).
-placeholders="$(find "${STAGE}" -type f -name '*.md' ! -name TEMPLATE.md ! -path "${STAGE}/.claude/*" -print0 |
-  xargs -0 awk '{ line = $0; gsub(/`[^`]*`/, "", line) }
-    line ~ /\[(PREENCHER|ADAPTAR)/ && !(FILENAME in seen) { seen[FILENAME]; print FILENAME }' |
-  sed "s#^${STAGE}/##" | sort | tr '\n' ' ' || true)"
-[[ -z "${placeholders}" ]] || echo "  - Campos [PREENCHER]/[ADAPTAR] a resolver em: ${placeholders}(PRD: bash scripts/product/check-prd.sh)"
+echo "  - Negócio: docs/product/prd.md (bash scripts/product/check-prd.sh), propósito no AGENTS.md §1 e visão geral no README.md."
+echo "  - Engenharia: seção \"Revisão neste projeto\" dos ADRs 0001 a 0003, AGENTS.md §2 (persistência) e licença."
+echo "  - Quality gates: blocos prontos no fim de docs/how-to/enable-quality-gates.md; depois QUALITY_GATES=required no .harness."
+echo "  - Harness: git init (se preciso), bash scripts/git/install-hooks.sh e bash scripts/verify.sh."
+pending="$( (cd "${DEST}" && bash scripts/agents/list-pending.sh) | grep -E '^  [^ ]' || true)"
+[[ -z "${pending}" ]] || { echo "  - Campos por responsável (lista completa: bash scripts/agents/list-pending.sh):"; sed 's/^/  /' <<<"${pending}"; }

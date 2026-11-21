@@ -35,12 +35,12 @@ bash scripts/agents/export-kit.sh ../orders-service --project-name "Orders Servi
 
 | Grupo | Arquivos na raiz do destino | Depois |
 |---|---|---|
-| Contexto dos agentes | `AGENTS.md`, `CLAUDE.md`, `.agents/skills/`, `.claude/settings.json`, `.codex/` | **Adaptar** o `AGENTS.md` §1 (propósito) e §2 (stack, preenchido com o que foi detectado em `app/pom.xml`) |
-| Harness | `scripts/`, `.harness` (`APP_DIR=app`, `QUALITY_GATES=optional`), `.editorconfig`, `.gitattributes`, `.gitignore`, `.gitleaks.toml` | Genérico |
-| Documentação de engenharia | `docs/ai/`, `docs/engineering/`, `docs/architecture/` (convenções, regras, layout, ADRs 0001 a 0003), `docs/features/`, `docs/how-to/run-tests.md`, `docs/how-to/enable-quality-gates.md` | ADRs entram como **Proposta (herdada do kit)**: revise e aceite |
+| Contexto dos agentes | `AGENTS.md`, `CLAUDE.md`, `.agents/skills/`, `.claude/settings.json`, `.codex/` | §1 (propósito, Negócio) e §2 (stack já detectada em `app/pom.xml`; persistência, Engenharia) com os campos prontos |
+| Harness | `scripts/` (sem as ferramentas do kit), `.harness` (`APP_DIR=app`, `QUALITY_GATES=optional`), `.editorconfig`, `.gitattributes`, `.gitignore`, `.gitleaks.toml` | Genérico; `bash scripts/agents/list-pending.sh` lista o que falta preencher, por responsável |
+| Documentação de engenharia | `docs/ai/`, `docs/engineering/`, `docs/architecture/` (convenções, regras, layout, ADRs 0001 a 0003), `docs/features/`, `docs/how-to/run-tests.md`, `docs/how-to/enable-quality-gates.md` (com os blocos de pom e testes prontos para o pacote do projeto) | ADRs entram como **Proposta**, com a seção "Revisão neste projeto" pronta para a decisão |
 | Produto | `docs/product/TEMPLATE.md` e `docs/product/prd.md` | O time de negócio preenche o PRD |
-| Ambiente e governança | `.devcontainer/`, `SECURITY.md`, `CONTRIBUTING.md`, `README.md` (se não existir) | Licença no `CONTRIBUTING.md` |
-| Não vai | `.github/`, `src/`, `pom.xml`, testes, PRD-001, FEAT-0001, `docs/reference/`, ADR-0004, ADR-0005, entradas do registro de aprendizados, `LICENSE`, `NOTICE` | `.github/` é do time de DevOps; o restante é deste produto ou decisão do novo dono |
+| Ambiente e governança | `.devcontainer/`, `SECURITY.md`, `CONTRIBUTING.md`, `README.md` com seções prontas (se não existir) | Visão geral (Negócio) e licença (Engenharia) |
+| Não vai | `.github/`, `src/`, `pom.xml`, testes, exportador do kit e seu teste, PRD-001, FEAT-0001, `docs/reference/`, ADR-0004, ADR-0005, entradas do registro de aprendizados, `LICENSE`, `NOTICE` | `.github/` é do time de DevOps; o restante é deste produto, deste repositório ou decisão do novo dono. O projeto não depende deste repositório nem do seed |
 
 O exportador:
 
@@ -64,7 +64,7 @@ O repositório [java-ai-first-seed](https://github.com/wesleyosantos91/java-ai-f
      --main-class OrdersApplication --project-name "Orders Service"
    ```
 
-   O script recusa um projeto já inicializado e uma working tree com alterações; não faz commit. Revise com `git diff`.
+   O script recusa um projeto já inicializado e uma working tree com alterações e não faz commit. É de uso único: ao final, remove a si mesmo e `scripts/lib/rename.sh`, e o projeto deixa de depender do seed. Revise com `git status` e `git diff`.
 3. O time de negócio preenche `docs/product/prd.md`. Cada seção indica quem preenche (Negócio, Engenharia ou Ambos) e se é obrigatória; `bash scripts/product/check-prd.sh` lista o que falta por responsável. Um PRD com Status Aprovado e campos pendentes reprova o `check-config`.
 4. Siga [Depois da exportação](#depois-da-exportação).
 
@@ -72,8 +72,8 @@ O repositório [java-ai-first-seed](https://github.com/wesleyosantos91/java-ai-f
 
 ## Depois da exportação
 
-1. **Adaptar:** `AGENTS.md` §1 e §2; licença (`LICENSE`/`NOTICE` e seção "Licença" do `CONTRIBUTING.md`); versões em `.devcontainer/devcontainer.json`. Se o app expõe JSON, considere `spring.jackson.deserialization.fail-on-unknown-properties: true` e `spring.mvc.problemdetails.enabled: true` no `application.yaml`. Isso é mudança no app, e exige autorização.
-2. **Contrato e decisões:** PRD aprovado por revisão humana; ADRs herdados (0001 a 0003) aceitos, ajustados por novo ADR ou rejeitados, com o índice atualizado.
+1. **Preencher as seções prontas:** `bash scripts/agents/list-pending.sh` lista cada campo `[PREENCHER-NEGÓCIO: ...]` e `[PREENCHER-ENGENHARIA: ...]` com arquivo e linha (`AGENTS.md` §1 e §2, README, licença no `CONTRIBUTING.md`, revisão dos ADRs). Confira também as versões em `.devcontainer/devcontainer.json`. Se o app expõe JSON, considere `spring.jackson.deserialization.fail-on-unknown-properties: true` e `spring.mvc.problemdetails.enabled: true` no `application.yaml`. Isso é mudança no app, e exige autorização.
+2. **Contrato e decisões:** PRD aprovado por revisão humana (`check-prd.sh` sem pendências); em cada ADR 0001 a 0003, a seção "Revisão neste projeto" preenchida (Aceita, Rejeitada ou Substituída por novo ADR) e o índice atualizado.
 3. **`.github/`:** workflows, CODEOWNERS e templates ficam com o time de DevOps. O `.claude/settings.json` nega a edição de `.github/**` aos agentes.
 4. **Ativar e verificar:**
 

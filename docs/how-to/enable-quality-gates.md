@@ -2,7 +2,7 @@
 
 O kit de configuração não altera o projeto Maven em `app/`. Sem a configuração dos gates no `app/pom.xml`, o harness roda com `QUALITY_GATES=optional` (`.harness`): build e suítes executam, e cada gate não configurado retorna **SKIP** com o motivo. SKIP não é PASS, e o `verify.sh` termina PARCIAL ([ADR-0003](../architecture/adr/0003-test-suites-and-quality-gates.md)).
 
-Este guia descreve o que adicionar para que JaCoCo, PIT e ArchUnit executem de fato. A referência completa e verificada é o `app/pom.xml` do seed público [java-ai-first-seed](https://github.com/wesleyosantos91/java-ai-first-seed) (gerado por `scripts/agents/export-kit.sh --seed`). Copie os blocos de lá em vez de reescrevê-los.
+Este guia descreve o que adicionar para que JaCoCo, PIT e ArchUnit executem de fato. A referência completa e verificada é o `pom.xml` deste repositório, de onde o exportador gera, no projeto de destino, os [blocos prontos](#blocos-prontos-para-este-projeto) com o pacote e a classe do projeto. <!-- kit:replace-line: Este guia descreve o que adicionar para que JaCoCo, PIT e ArchUnit executem de fato. Os [blocos prontos](#blocos-prontos-para-este-projeto) no fim deste guia já vêm com o pacote e a classe deste projeto: copie-os em vez de reescrevê-los. -->
 
 ## O que o harness procura
 
