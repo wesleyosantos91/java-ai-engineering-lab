@@ -38,7 +38,7 @@ Vulnerabilidades são reportadas de forma privada, conforme o [SECURITY.md](SECU
 
 ## Licença
 
-Ao contribuir, você concorda que sua contribuição seja licenciada sob a [Apache License 2.0](LICENSE), conforme a seção 5 da licença.
+Ao contribuir, você concorda que sua contribuição seja licenciada sob a [Apache License 2.0](LICENSE), conforme a seção 5 da licença. <!-- kit:replace-line: [PREENCHER: licença do projeto e termos das contribuições]. -->
 
 ## Revisão humana
 

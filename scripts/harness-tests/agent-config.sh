@@ -14,7 +14,13 @@ WORK="$(mktemp -d "${ROOT_DIR}/target/agent-config-check.XXXXXX")"
 make_fixture() {
   local dest="$1"
   mkdir -p "${dest}"
-  (cd "${ROOT_DIR}" && tar -cf - AGENTS.md CLAUDE.md README.md CONTRIBUTING.md LICENSE NOTICE SECURITY.md .gitleaks.toml .devcontainer .agents .claude .github docs performance scripts) | (cd "${dest}" && tar -xf -)
+  local items=() item
+  # Somente o que existe: num repositório gerado pelo kit, LICENSE e NOTICE podem faltar.
+  for item in AGENTS.md CLAUDE.md README.md CONTRIBUTING.md LICENSE NOTICE SECURITY.md .gitleaks.toml \
+    .devcontainer .agents .claude .github docs performance scripts; do
+    [[ -e "${ROOT_DIR}/${item}" ]] && items+=("${item}")
+  done
+  (cd "${ROOT_DIR}" && tar -cf - "${items[@]}") | (cd "${dest}" && tar -xf -)
 }
 
 check() {

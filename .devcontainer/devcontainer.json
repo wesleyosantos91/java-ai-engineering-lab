@@ -1,5 +1,5 @@
 // Ambiente reproduzível para Codespaces, agentes em nuvem e desenvolvimento local em contêiner.
-// Mesma stack do AGENTS.md: Java 27 (Temurin, patch fixado; atualize deliberadamente, LL-0009),
+// Mesma stack do AGENTS.md: Java 27 (Temurin, patch fixado; atualize deliberadamente),
 // Docker para Testcontainers e GitHub CLI.
 // k6 não é instalado: o smoke de performance é execução explícita e opcional.
 {

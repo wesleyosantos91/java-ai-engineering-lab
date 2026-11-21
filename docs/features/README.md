@@ -24,17 +24,18 @@ No modelo Diátaxis, esta página é uma referência de governança; o template 
 
 ## Organização
 
-Arquivos presentes neste catálogo:
+Estrutura do catálogo:
 
 ```text
 docs/features/
 ├── README.md
 ├── TEMPLATE.md
-└── FEAT-0001-create-product/
-    └── spec.md
+└── FEAT-XXXX-short-description/   # uma pasta por feature registrada
+    ├── spec.md
+    └── design.md                  # opcional
 ```
 
-Uma feature pode ter também `design.md`, opcional, quando a complexidade justificar.
+Crie `design.md` somente quando a complexidade justificar.
 
 | Arquivo | Responsabilidade |
 |---|---|
@@ -82,7 +83,7 @@ Os estados são mantidos manualmente nos arquivos. Não criam issues, labels, pr
 
 | ID | Nome | Status | Contrato de referência | Link da especificação |
 |---|---|---|---|---|
-| FEAT-0001 | Criar produto (`POST /api/v1/products`) | Em validação | PRD-001 1.0, §4, §5.1, §6, §7; CA-01, 02, 03, 08, 10, 11 | [spec.md](FEAT-0001-create-product/spec.md) |
+| FEAT-0001 | Criar produto (`POST /api/v1/products`) | Em validação | PRD-001 1.0, §4, §5.1, §6, §7; CA-01, 02, 03, 08, 10, 11 | [spec.md](FEAT-0001-create-product/spec.md) <!-- kit:omit-line --> |
 
 Ao registrar uma demanda real, inclua uma linha e um link relativo para seu `spec.md`, mantendo o status sincronizado com a especificação. Não preencha a tabela com exemplos ou capacidades futuras sem demanda registrada.
 
