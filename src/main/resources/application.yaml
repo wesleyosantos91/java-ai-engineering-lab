@@ -1,3 +1,10 @@
 spring:
   application:
     name: java-ai-engineering-lab
+  jackson:
+    deserialization:
+      # PRD-001, seção 6.1.1: propriedades JSON desconhecidas são rejeitadas, nunca ignoradas.
+      fail-on-unknown-properties: true
+  mvc:
+    problemdetails:
+      enabled: true

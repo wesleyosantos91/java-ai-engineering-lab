@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Reportar vulnerabilidade de segurança
+    url: https://github.com/wesleyosantos91/java-ai-engineering-lab/security/advisories/new
+    about: Use o reporte privado; não abra issue pública para vulnerabilidades (SECURITY.md).

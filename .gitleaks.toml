@@ -1,0 +1,11 @@
+# Configuração do gitleaks (scripts/security/scan-secrets.sh). Usa as regras padrão e só
+# ignora artefatos gerados e locais, nunca código ou documentação versionados.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Artefatos gerados e arquivos locais de IDE"
+paths = [
+  '''(^|/)target/''',
+  '''(^|/)\.idea/''',
+]

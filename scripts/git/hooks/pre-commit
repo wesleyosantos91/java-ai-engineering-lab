@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Hook pre-commit: branch de trabalho, configuração de agentes, espaços no diff preparado e,
+# quando disponível, varredura de segredos. Instale com bash scripts/git/install-hooks.sh.
+set -Eeuo pipefail
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+
+bash "${ROOT_DIR}/scripts/git/guard-branch.sh"
+bash "${ROOT_DIR}/scripts/agents/check-config.sh" >/dev/null || {
+  echo "[FAIL] pre-commit: configuração de agentes inválida; execute bash scripts/agents/check-config.sh." >&2
+  exit 1
+}
+git -C "${ROOT_DIR}" diff --cached --check || {
+  echo "[FAIL] pre-commit: espaços em branco inválidos no diff preparado." >&2
+  exit 1
+}
+
+# Varredura de segredos: SKIP (3) não bloqueia, mas é informado; achados (1) bloqueiam.
+code=0
+bash "${ROOT_DIR}/scripts/security/scan-secrets.sh" --staged || code=$?
+case "${code}" in
+  0|3) ;;
+  *) echo "[FAIL] pre-commit: varredura de segredos reprovou o commit." >&2; exit 1 ;;
+esac

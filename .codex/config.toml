@@ -1,0 +1,11 @@
+# Configuração de projeto do Codex (ADR-0002). Carregada somente quando o projeto é marcado
+# como confiável. As regras canônicas estão no AGENTS.md; este arquivo apenas reforça limites.
+# Referência: https://developers.openai.com/codex/config-reference (consultada em 2026-11-20).
+
+# Escrita restrita ao workspace; ações fora dele exigem aprovação.
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+
+[sandbox_workspace_write]
+# Downloads do Maven Wrapper e imagens do Testcontainers exigem rede.
+network_access = true

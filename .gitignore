@@ -28,6 +28,13 @@ target/
 build/
 !**/src/main/**/build/
 !**/src/test/**/build/
+# Scripts do harness não são saída de build.
+!/scripts/build/
 
 ### VS Code ###
 .vscode/
+
+### Agentes de IA (arquivos locais) ###
+.claude/settings.local.json
+CLAUDE.local.md
+AGENTS.local.md
