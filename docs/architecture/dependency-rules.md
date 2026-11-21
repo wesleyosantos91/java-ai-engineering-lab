@@ -32,6 +32,13 @@ O domínio não deve depender de:
 
 ### API
 
+Dentro da feature, `api` depende **somente** de `service`:
+requests, responses e handlers HTTP usam os tipos
+do service (comandos, resultados e exceções),
+nunca classes de `domain` ou `persistence`.
+O service traduz as exceções do domínio
+(decisão de 2026-11-20, registrada no ADR-0003).
+
 Controllers não devem:
 
 - Executar consultas SQL.
@@ -74,10 +81,12 @@ ser registradas em ADR.
 
 ## Validação
 
-Estas regras serão inicialmente verificadas
-por revisão de código.
-
-Posteriormente, serão automatizadas com ArchUnit.
+As regras são automatizadas com ArchUnit em
+`src/test/java/io/github/wesleyosantos91/catalog/architecture/ArchitectureTest.java`
+e executadas por `bash scripts/test/architecture.sh`
+(lista de regras no [guia de testes](../how-to/run-tests.md#archunit)).
+O que não tem regra automatizada continua
+verificado por revisão de código.
 
 Não declarar uma regra como automaticamente
 protegida antes da implementação do teste.
