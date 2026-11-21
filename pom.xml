@@ -32,6 +32,10 @@
 	</scm>
 	<properties>
 		<java.version>27</java.version>
+		<!-- Ponto único de customização do pacote base (quality gates e scripts/quality/*.sh). -->
+		<app.basePackage>io.github.wesleyosantos91.catalog</app.basePackage>
+		<app.basePath>io/github/wesleyosantos91/catalog</app.basePath>
+		<app.mainClass>JavaAiEngineeringLabApplication</app.mainClass>
 		<skipUnitTests>false</skipUnitTests>
 		<argLine/>
 		<!-- Quality gates: versões explícitas, não gerenciadas pelo parent Spring Boot. -->
@@ -236,9 +240,9 @@
 							<dataFile>${project.build.directory}/jacoco-merged.exec</dataFile>
 							<outputDirectory>${project.build.directory}/site/jacoco</outputDirectory>
 							<formats><format>XML</format><format>HTML</format></formats>
-							<!-- Bootstrap Spring Boot sem regra de negócio. Manter em sincronia com coverage-check e scripts/test-coverage.sh. -->
+							<!-- Bootstrap Spring Boot sem regra de negócio; scripts/quality/coverage.sh lê as mesmas propriedades. -->
 							<excludes>
-								<exclude>io/github/wesleyosantos91/catalog/JavaAiEngineeringLabApplication.class</exclude>
+								<exclude>${app.basePath}/${app.mainClass}.class</exclude>
 							</excludes>
 						</configuration>
 					</execution>
@@ -250,7 +254,7 @@
 							<dataFile>${project.build.directory}/jacoco-merged.exec</dataFile>
 							<haltOnFailure>true</haltOnFailure>
 							<excludes>
-								<exclude>io/github/wesleyosantos91/catalog/JavaAiEngineeringLabApplication.class</exclude>
+								<exclude>${app.basePath}/${app.mainClass}.class</exclude>
 							</excludes>
 							<rules>
 								<rule>
@@ -286,16 +290,16 @@
 					</dependency>
 				</dependencies>
 				<configuration>
-					<!-- Código de negócio elegível: domain e service das features. Manter em sincronia com scripts/test-mutation.sh. -->
+					<!-- Código de negócio elegível: domain e service das features; scripts/quality/mutation.sh lê app.basePath. -->
 					<targetClasses>
-						<param>io.github.wesleyosantos91.catalog.feature.*.domain.*</param>
-						<param>io.github.wesleyosantos91.catalog.feature.*.service.*</param>
+						<param>${app.basePackage}.feature.*.domain.*</param>
+						<param>${app.basePackage}.feature.*.service.*</param>
 					</targetClasses>
 					<targetTests>
-						<param>io.github.wesleyosantos91.catalog.*Test</param>
+						<param>${app.basePackage}.*Test</param>
 					</targetTests>
 					<excludedTestClasses>
-						<param>io.github.wesleyosantos91.catalog.*ArchitectureTest</param>
+						<param>${app.basePackage}.*ArchitectureTest</param>
 					</excludedTestClasses>
 					<mutationThreshold>90</mutationThreshold>
 					<failWhenNoMutations>false</failWhenNoMutations>

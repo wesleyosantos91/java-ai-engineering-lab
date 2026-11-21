@@ -13,10 +13,12 @@ REPORT="${TARGET}/site/jacoco/jacoco.xml"
   echo "[FAIL] pom.xml ou Maven Wrapper não encontrado." >&2; exit 1;
 }
 
-# Mesma exclusão declarada no jacoco-maven-plugin (bootstrap sem regra de negócio).
+source "${SCRIPT_DIR}/../lib/pom.sh"
+# Mesma exclusão declarada no jacoco-maven-plugin (bootstrap sem regra de negócio, app.mainClass).
+MAIN_CLASS="$(pom_property app.mainClass)" || exit 1
 if [[ ! -d "${ROOT_DIR}/src/main/java" ]] ||
    ! find "${ROOT_DIR}/src/main/java" -type f -name '*.java' \
-     ! -name 'package-info.java' ! -name 'JavaAiEngineeringLabApplication.java' -print -quit | grep -q .; then
+     ! -name 'package-info.java' ! -name "${MAIN_CLASS}.java" -print -quit | grep -q .; then
   echo "[SKIP] Cobertura: não existe código elegível em src/main/java."
   exit 3
 fi
