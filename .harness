@@ -1,4 +1,5 @@
-# Configuração do harness (scripts/lib/app.sh). Neste repositório de referência o projeto Maven
-# fica na raiz; em projetos criados pelo kit ou pelo seed, em app/.
+# Configuração do harness (scripts/lib/app.sh). Este é o repositório de referência: o projeto
+# Maven fica na raiz. Em projetos criados pelo kit ou pelo seed, APP_DIR=app (sempre).
 APP_DIR=.
 QUALITY_GATES=required
+REPOSITORY_ROLE=reference

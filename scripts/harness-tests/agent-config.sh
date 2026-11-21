@@ -124,16 +124,17 @@ fresh
 printf 'APP_DIR=.\nEXTRA=1\n' > "${f}/.harness"
 check 1 "chave desconhecida 'EXTRA'" "${f}" agents/check-config.sh
 fresh
-# Neste repositório de referência, remover o ADR-0004 também quebra os links para ele (exit 1);
-# num projeto gerado pelo kit, ele não existe. A mensagem do .harness é o que se verifica.
-links_exit=0
-if compgen -G "${f}/docs/architecture/adr/0004-*.md" >/dev/null; then links_exit=1; fi
-rm -f "${f}/docs/architecture/adr/0004-"*.md
+# Projeto (REPOSITORY_ROLE=project, padrão): o pom fica em app/. Só o repositório de referência
+# declara outro APP_DIR, e o papel inválido é rejeitado.
 printf 'APP_DIR=.\n' > "${f}/.harness"
 check 1 'em projetos o pom fica em app/' "${f}" agents/check-config.sh
+printf 'APP_DIR=.\nREPOSITORY_ROLE=reference\n' > "${f}/.harness"
+check 0 '[PASS] .harness válido (APP_DIR=.)' "${f}" agents/check-config.sh
+printf 'APP_DIR=.\nREPOSITORY_ROLE=legado\n' > "${f}/.harness"
+check 1 "REPOSITORY_ROLE 'legado' inválido" "${f}" agents/check-config.sh
 mkdir -p "${f}/app"
 printf 'APP_DIR=app\n' > "${f}/.harness"
-check "${links_exit}" '[PASS] .harness válido (APP_DIR=app)' "${f}" agents/check-config.sh
+check 0 '[PASS] .harness válido (APP_DIR=app)' "${f}" agents/check-config.sh
 
 # PRD: template em elaboração é aceito (pendências listadas por responsável); aprovado com
 # pendências é rejeitado, e só os campos fora de código contam.
