@@ -79,6 +79,7 @@ assert test ! -e "${dest}/tests"
 assert test ! -e "${dest}/app/pom.xml.kit"
 assert grep -qx 'APP_DIR=app' "${dest}/.harness"
 assert grep -qx 'QUALITY_GATES=optional' "${dest}/.harness"
+assert grep -qx 'REPOSITORY_ROLE=project' "${dest}/.harness"
 # Projeto autossuficiente: sem as ferramentas do kit e sem referência a este repositório ou ao seed.
 assert test ! -e "${dest}/scripts/agents/export-kit.sh"
 assert test ! -e "${dest}/scripts/harness-tests/export-kit.sh"

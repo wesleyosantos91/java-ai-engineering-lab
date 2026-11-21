@@ -360,8 +360,16 @@ write_gate_blocks
 #    até o pom do app ser configurado.
 gates=optional
 (( ! seed )) || gates=required
-printf '# Configuração do harness (scripts/lib/app.sh). O projeto Maven fica sempre em app/.\n# QUALITY_GATES=optional: gate não configurado em app/pom.xml é SKIP; required: FAIL.\n# Veja docs/how-to/enable-quality-gates.md.\nAPP_DIR=%s\nQUALITY_GATES=%s\n' \
-  "${DEST_APP}" "${gates}" > "${STAGE}/.harness"
+cat > "${STAGE}/.harness" <<EOF
+# Configuração do harness (scripts/lib/app.sh); chave=valor, sem execução de código.
+# APP_DIR: projeto Maven, sempre app/ (docs/architecture/repository-layout.md).
+# QUALITY_GATES: optional = gate não configurado em app/pom.xml é SKIP; required = FAIL.
+#   Para ativar, veja docs/how-to/enable-quality-gates.md.
+# REPOSITORY_ROLE: project exige APP_DIR=app (verificado por scripts/agents/check-config.sh).
+APP_DIR=${DEST_APP}
+QUALITY_GATES=${gates}
+REPOSITORY_ROLE=project
+EOF
 
 if [[ -e "${DEST}/README.md" ]]; then
   # O README do destino é mantido; a verificação abaixo usa o estado final real.
