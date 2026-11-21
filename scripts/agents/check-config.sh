@@ -103,6 +103,10 @@ if [[ -f .claude/settings.json ]]; then
     no) fail ".claude/settings.json não é JSON válido." ;;
     *) echo "[WARN] Sem python/node; validade JSON de .claude/settings.json NÃO VERIFICADA." ;;
   esac
+  # .github/ pertence ao time de DevOps (AGENTS.md, seção 8): edição por agentes negada.
+  for rule in 'Edit(./.github/**)' 'Write(./.github/**)'; do
+    grep -qF "\"${rule}\"" .claude/settings.json || fail ".claude/settings.json sem deny ${rule} (.github/ é gerido por DevOps)."
+  done
   while IFS= read -r hook; do
     [[ -f "${hook}" ]] || fail ".claude/settings.json referencia hook inexistente: ${hook}"
   done < <(grep -o 'CLAUDE_PROJECT_DIR/[^"\\]*' .claude/settings.json | sed 's#^CLAUDE_PROJECT_DIR/##')
@@ -158,6 +162,19 @@ if (( ${#docs[@]} > 0 )); then
 fi
 (( marker_failures > 0 )) || pass "Marcadores do kit válidos."
 
+# 6b'. .harness: chaves válidas; em projetos, o pom fica sempre em app/ (docs/architecture/
+# repository-layout.md). Só este repositório de referência (identificado pelo ADR-0004) usa a raiz.
+if harness_error="$(source "${ROOT_DIR}/scripts/lib/app.sh" 2>&1 >/dev/null)"; then
+  harness_dir="$(source "${ROOT_DIR}/scripts/lib/app.sh" && printf '%s' "${APP_DIR}")"
+  if compgen -G 'docs/architecture/adr/0004-*.md' >/dev/null || [[ "${harness_dir}" == app ]]; then
+    pass ".harness válido (APP_DIR=${harness_dir})."
+  else
+    fail ".harness: APP_DIR=${harness_dir}; em projetos o pom fica em app/ (APP_DIR=app)."
+  fi
+else
+  fail "${harness_error#\[FAIL\] }"
+fi
+
 # 6c. PRD: pendências são esperadas em elaboração; aprovação com pendências é rejeitada.
 prd_code=0
 prd_output="$(bash "${ROOT_DIR}/scripts/product/check-prd.sh" 2>&1)" || prd_code=$?
@@ -200,7 +217,7 @@ if [[ "$(git rev-parse --is-inside-work-tree 2>/dev/null)" == true && -z "$(git 
   # não são artefatos compartilhados perdidos; somente eles ficam fora desta verificação.
   local_files=(.claude/settings.local.json)
   ignored="$({ find scripts performance .agents .claude .codex .github .devcontainer -type f 2>/dev/null
-    printf '%s\n' AGENTS.md CLAUDE.md SECURITY.md .gitleaks.toml .editorconfig; } |
+    printf '%s\n' AGENTS.md CLAUDE.md SECURITY.md .gitleaks.toml .editorconfig .harness; } |
     { grep -vxF -f <(printf '%s\n' "${local_files[@]}") || true; } |
     git check-ignore --stdin 2>/dev/null || true)"
   if [[ -n "${ignored}" ]]; then

@@ -25,6 +25,7 @@ Encontrar defeitos reais antes da integração. A revisão do agente não substi
 - O comportamento corresponde ao PRD e aos cenários BDD, incluindo status HTTP e `ProblemDetail`.
 - Casos de erro, limites, nulos, concorrência e transações foram tratados.
 - Não há funcionalidade fora do escopo.
+- O diff não altera `.github/` (gerido por DevOps; AGENTS.md, seção 8). Se alterar, é achado bloqueante.
 
 **Arquitetura** — aplique a [skill architecture-guard](../architecture-guard/SKILL.md).
 
