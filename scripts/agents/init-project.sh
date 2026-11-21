@@ -13,6 +13,7 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 ROOT_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd -P)"
+source "${SCRIPT_DIR}/../lib/app.sh" || exit 1
 source "${SCRIPT_DIR}/../lib/pom.sh"
 source "${SCRIPT_DIR}/../lib/rename.sh"
 
@@ -58,12 +59,12 @@ if [[ -n "$(git status --porcelain)" ]]; then
   echo "[FAIL] Working tree com alterações; faça commit ou descarte antes de inicializar." >&2; exit 1
 fi
 
-rename_package "${ROOT_DIR}" "${SEED_PACKAGE}" "${new_package}"
-rename_main_class "${ROOT_DIR}" "${SEED_MAIN}" "${new_main}"
+rename_package "${ROOT_DIR}" "${SEED_PACKAGE}" "${new_package}" "${APP_DIR}"
+rename_main_class "${ROOT_DIR}" "${SEED_MAIN}" "${new_main}" "${APP_DIR}"
 rename_literal "${ROOT_DIR}" "${SEED_SLUG}" "${slug}"
 rename_literal "${ROOT_DIR}" "${SEED_NAME}" "${project_name}"
 # groupId do projeto: o pacote base sem o último segmento (com.acme.orders -> com.acme).
-sed -i "/<\/parent>/,/<artifactId>/ s#<groupId>[^<]*</groupId>#<groupId>${new_package%.*}</groupId>#" pom.xml
+sed -i "/<\/parent>/,/<artifactId>/ s#<groupId>[^<]*</groupId>#<groupId>${new_package%.*}</groupId>#" "${APP_ROOT}/pom.xml"
 
 printf '# %s\n\n[PREENCHER: o que o projeto faz e como começar.]\n\nRequisitos: [PRD](docs/product/prd.md). Instruções para agentes de IA: [AGENTS.md](AGENTS.md). Como contribuir: [CONTRIBUTING.md](CONTRIBUTING.md).\n' \
   "${project_name}" > README.md
@@ -77,5 +78,5 @@ fi
 echo "[PASS] ${project_name} inicializado: pacote ${new_package}, classe ${new_main}, artifactId ${slug}."
 echo "[INFO] Próximos passos (revise com git diff antes do primeiro commit numa branch de trabalho):"
 echo "  - Negócio: preencher docs/product/prd.md; pendências por responsável: bash scripts/product/check-prd.sh"
-echo "  - Engenharia: AGENTS.md §1 e §2, ADRs herdados, CODEOWNERS, OWNER/REPO nos templates de issue, LICENSE/NOTICE."
+echo "  - Engenharia: AGENTS.md §1 e §2, ADRs herdados, LICENSE/NOTICE. .github/ é configurado pelo time de DevOps."
 echo "  - Harness: bash scripts/git/install-hooks.sh; bash scripts/setup.sh; bash scripts/verify.sh"

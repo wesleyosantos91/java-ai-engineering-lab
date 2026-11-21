@@ -29,14 +29,15 @@ rename_literal() {
   done < <(rename_text_files "${root}" "${old}")
 }
 
-# Pacote base: conteúdo (com.a.b e com/a/b) e diretórios src/{main,test}/java.
+# Pacote base: conteúdo (com.a.b e com/a/b) e diretórios <app>/src/{main,test}/java.
+# Uso: rename_package <raiz> <antigo> <novo> [diretório do app, padrão "."]
 rename_package() {
-  local root="$1" old_package="$2" new_package="$3" old_path new_path tree
+  local root="$1" old_package="$2" new_package="$3" app="${4:-.}" old_path new_path tree
   [[ "${old_package}" != "${new_package}" ]] || return 0
   old_path="${old_package//.//}" new_path="${new_package//.//}"
   rename_literal "${root}" "${old_package}" "${new_package}"
   rename_literal "${root}" "${old_path}" "${new_path}"
-  for tree in "${root}/src/main/java" "${root}/src/test/java"; do
+  for tree in "${root}/${app}/src/main/java" "${root}/${app}/src/test/java"; do
     [[ -d "${tree}/${old_path}" ]] || continue
     mkdir -p "${tree}/${new_path}"
     cp -R "${tree}/${old_path}/." "${tree}/${new_path}/"
@@ -48,14 +49,15 @@ rename_package() {
 }
 
 # Classe principal: conteúdo e nomes de arquivo (Main.java, MainIT.java, TestMain.java).
+# Uso: rename_main_class <raiz> <antiga> <nova> [diretório do app, padrão "."]
 rename_main_class() {
-  local root="$1" old_main="$2" new_main="$3" file
+  local root="$1" old_main="$2" new_main="$3" app="${4:-.}" file
   [[ "${old_main}" != "${new_main}" ]] || return 0
   rename_literal "${root}" "${old_main}" "${new_main}"
-  [[ -d "${root}/src" ]] || return 0
+  [[ -d "${root}/${app}/src" ]] || return 0
   while IFS= read -r -d '' file; do
     mv "${file}" "${file%/*}/$(basename -- "${file}" | sed "s#${old_main}#${new_main}#g")"
-  done < <(find "${root}/src" -type f -name "*${old_main}*" -print0)
+  done < <(find "${root}/${app}/src" -type f -name "*${old_main}*" -print0)
 }
 
 # Nome do projeto em minúsculas e hifens (artifactId, devcontainer, spring.application.name).
