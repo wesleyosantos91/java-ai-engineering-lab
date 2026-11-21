@@ -9,6 +9,8 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 ROOT_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd -P)"
 BASE_URL="${BASE_URL:-http://localhost:8080}"
 source "${SCRIPT_DIR}/../lib/app.sh" || exit 1
+source "${SCRIPT_DIR}/../lib/lock.sh"
+acquire_harness_lock || exit 1
 SUMMARY="${APP_PREFIX}target/performance/smoke-summary.json"
 
 cd "${ROOT_DIR}"

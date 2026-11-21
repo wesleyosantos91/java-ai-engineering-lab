@@ -7,6 +7,8 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 ROOT_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd -P)"
+source "${ROOT_DIR}/scripts/lib/lock.sh"
+acquire_harness_lock || exit 1
 mkdir -p "${ROOT_DIR}/target"
 WORK="$(mktemp -d "${ROOT_DIR}/target/agent-config-check.XXXXXX")"
 

@@ -5,6 +5,8 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 ROOT_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd -P)"
 
 source "${SCRIPT_DIR}/../lib/app.sh" || exit 1
+source "${SCRIPT_DIR}/../lib/lock.sh"
+acquire_harness_lock || exit 1
 source "${SCRIPT_DIR}/../lib/test-suite.sh"
 # Execução Surefire dedicada (phase none): não roda no ciclo default, grava relatórios próprios
 # e não usa o agent JaCoCo. Regras sem classes elegíveis usam o marcador [N/A] (ArchitectureTest)
