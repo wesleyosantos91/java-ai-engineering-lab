@@ -4,21 +4,27 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 ROOT_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd -P)"
 
-[[ -f "${ROOT_DIR}/pom.xml" ]] || { echo "ERRO: pom.xml não encontrado." >&2; exit 1; }
-[[ -f "${ROOT_DIR}/mvnw" ]] || { echo "ERRO: Maven Wrapper não encontrado." >&2; exit 1; }
+source "${SCRIPT_DIR}/lib/app.sh" || exit 1
+require_maven_project || exit 1
 command -v java >/dev/null 2>&1 || { echo "ERRO: Java não disponível no PATH." >&2; exit 1; }
 
-cd "${ROOT_DIR}"
+cd "${APP_ROOT}"
+echo "[INFO] Projeto Maven: ${APP_PREFIX:-./}pom.xml (QUALITY_GATES=${QUALITY_GATES})."
 echo "[INFO] Bash: ${BASH_VERSION}"
 echo "[INFO] Versão Java:"
 java_version="$(java -version 2>&1)"
 printf '%s\n' "${java_version}"
-# Stack do projeto: Java 27 (AGENTS.md, seção 2). Inspeção apenas: diverge -> aviso, não falha.
+# Java exigido: java.version do pom do app (AGENTS.md, seção 2). Inspeção apenas: diverge -> aviso.
 java_major="$(sed -n 's/.*version "\([0-9]*\).*/\1/p' <<<"${java_version}" | head -n 1)"
-if [[ "${java_major}" == 27 ]]; then
-  echo "[OK] Java ${java_major}, conforme a stack."
+java_required="$(sed -n 's#.*<java.version>\([0-9]*\)</java.version>.*#\1#p' pom.xml | head -n 1)"
+if [[ -z "${java_required}" ]]; then
+  echo "[AVISO] java.version ausente em ${APP_PREFIX}pom.xml; versão exigida não verificada." >&2
+elif [[ "${java_major}" == "${java_required}" ]]; then
+  echo "[OK] Java ${java_major}, conforme ${APP_PREFIX}pom.xml."
+elif [[ "${java_major}" =~ ^[0-9]+$ ]] && (( java_major > java_required )); then
+  echo "[OK] Java ${java_major} no PATH compila para java.version ${java_required} (${APP_PREFIX}pom.xml)."
 else
-  echo "[AVISO] Java ${java_major:-desconhecido} no PATH; a stack exige Java 27. Build e testes podem divergir." >&2
+  echo "[AVISO] Java ${java_major:-desconhecido} no PATH; ${APP_PREFIX}pom.xml exige ${java_required}. Build e testes podem divergir." >&2
 fi
 echo "[INFO] Versão Maven resolvida pelo Wrapper:"
 bash ./mvnw --version

@@ -1,0 +1,4 @@
+# Configuração do harness (scripts/lib/app.sh). Neste repositório de referência o projeto Maven
+# fica na raiz; em projetos criados pelo kit ou pelo seed, em app/.
+APP_DIR=.
+QUALITY_GATES=required

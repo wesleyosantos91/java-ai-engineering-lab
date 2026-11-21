@@ -8,8 +8,10 @@ ROOT_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd -P)"
 mkdir -p "${ROOT_DIR}/target"
 FIXTURE="$(mktemp -d "${ROOT_DIR}/target/quality-gates.XXXXXX")/project with spaces"
 mkdir -p "${FIXTURE}"
-cp "${ROOT_DIR}/pom.xml" "${ROOT_DIR}/mvnw" "${FIXTURE}/"
-cp -R "${ROOT_DIR}/.mvn" "${ROOT_DIR}/src" "${ROOT_DIR}/scripts" "${FIXTURE}/"
+source "${ROOT_DIR}/scripts/lib/app.sh" || exit 1
+# A cópia usa o layout com o pom na raiz (sem .harness), qualquer que seja o APP_DIR de origem.
+cp "${APP_ROOT}/pom.xml" "${APP_ROOT}/mvnw" "${FIXTURE}/"
+cp -R "${APP_ROOT}/.mvn" "${APP_ROOT}/src" "${ROOT_DIR}/scripts" "${FIXTURE}/"
 # Os gates são provados sobre a feature de exemplo abaixo, isolada do código real: features e
 # código compartilhado do projeto (cobertos também por *IT) alterariam as medições da cópia.
 rm -rf "${FIXTURE}/src/main/java/io/github/wesleyosantos91/catalog/feature" \

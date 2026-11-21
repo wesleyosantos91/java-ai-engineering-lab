@@ -7,8 +7,10 @@ mkdir -p "${ROOT_DIR}/target"
 FIXTURE="$(mktemp -d "${ROOT_DIR}/target/harness-check.XXXXXX")/fixture with spaces"
 mkdir -p "${FIXTURE}/bin" "${FIXTURE}/src/test/java"
 cp -R "${ROOT_DIR}/scripts" "${FIXTURE}/scripts"
-# pom.xml mínimo: só as propriedades de pacote que os scripts de qualidade leem (lib/pom.sh).
+# pom.xml mínimo: as propriedades de pacote (lib/pom.sh) e os marcadores dos gates configurados
+# (lib/app.sh: sem eles, o gate é "não configurado").
 cat > "${FIXTURE}/pom.xml" <<'XML'
+<!-- <id>coverage-check</id> pitest-maven <id>architecture</id> maven-failsafe-plugin -->
 <project><properties>
 <app.basePackage>io.github.wesleyosantos91.catalog</app.basePackage>
 <app.basePath>io/github/wesleyosantos91/catalog</app.basePath>
@@ -165,9 +167,22 @@ check 3 'nenhum mutante gerado' quality/mutation.sh MOCK_MUTANTS=none
 check 1 'PIT rejeitou o threshold' quality/mutation.sh MOCK_PIT_EXIT=1
 # Sem as propriedades app.* no pom.xml, os gates falham explicitamente em vez de adivinhar o pacote.
 cp "${FIXTURE}/pom.xml" "${FIXTURE}/pom.xml.bak"
+sed -i '/<app\./d' "${FIXTURE}/pom.xml"
+check 1 'propriedade app.basePath) ausente' quality/mutation.sh
+check 1 'propriedade app.mainClass) ausente' quality/coverage.sh
+# Gate não configurado no pom: FAIL com QUALITY_GATES=required (padrão), SKIP com optional.
 echo '<project/>' > "${FIXTURE}/pom.xml"
-check 1 'Propriedade <app.basePath> ausente' quality/mutation.sh
-check 1 'Propriedade <app.mainClass> ausente' quality/coverage.sh
+check 1 'PIT (pitest-maven e propriedade app.basePath) ausente em pom.xml (QUALITY_GATES=required)' quality/mutation.sh
+check 1 'JaCoCo (execução coverage-check e propriedade app.mainClass) ausente' quality/coverage.sh
+check 1 'Arquitetura: <id>architecture</id> ausente' test/architecture.sh
+check 1 'Integração: maven-failsafe-plugin ausente' test/integration.sh
+printf 'QUALITY_GATES=optional
+' > "${FIXTURE}/.harness"
+check 3 'Mutação: PIT (pitest-maven e propriedade app.basePath) não configurado em pom.xml' quality/mutation.sh
+check 3 'Cobertura: JaCoCo (execução coverage-check e propriedade app.mainClass) não configurado' quality/coverage.sh
+check 3 'Arquitetura: <id>architecture</id> não configurado' test/architecture.sh
+check 3 'Integração: maven-failsafe-plugin não configurado' test/integration.sh
+rm "${FIXTURE}/.harness"
 mv "${FIXTURE}/pom.xml.bak" "${FIXTURE}/pom.xml"
 # Performance: smoke k6 com k6 e curl simulados; a aplicação real não é necessária.
 mkdir -p "${FIXTURE}/performance/k6"
@@ -214,5 +229,40 @@ check 0 'diff preparado' security/scan-secrets.sh -- --staged
 grep -q -- '--pre-commit --staged' "${FIXTURE_TRACE}"
 check 1 'possíveis segredos encontrados' security/scan-secrets.sh MOCK_GITLEAKS_EXIT=1
 check 1 'gitleaks falhou (exit 2)' security/scan-secrets.sh MOCK_GITLEAKS_EXIT=2
+
+# Layout de projeto: Maven em app/ (.harness), configuração e scripts na raiz.
+mkdir -p "${FIXTURE}/app"
+mv "${FIXTURE}/pom.xml" "${FIXTURE}/mvnw" "${FIXTURE}/src" "${FIXTURE}/target" "${FIXTURE}/app/"
+check 1 'pom.xml ou Maven Wrapper (mvnw) não encontrado' test/unit.sh
+printf '# projeto
+APP_DIR=app
+QUALITY_GATES=required
+' > "${FIXTURE}/.harness"
+check 0 '[PASS] Arquitetura: 1' test/architecture.sh
+grep -q 'surefire:test@architecture' "${FIXTURE_TRACE}"
+test -f "${FIXTURE}/app/target/architecture-reports/TEST-Fixture.xml"
+check 0 'Build=PASS; Unitários=SKIP; Arquitetura=PASS; Integração=PASS; Cobertura=PASS' verify.sh
+check 0 '[PASS] Mutação' quality/mutation.sh
+check 0 '[PASS] Performance' performance/smoke.sh
+grep -q -- '--summary-export app/target/performance/smoke-summary.json' "${FIXTURE_TRACE}"
+touch "${FIXTURE}/app/src/test/java/DemoApplicationTests.java"
+check 3 '1 classe(s) *Tests ignorada(s)' test/unit.sh
+mv "${FIXTURE}/performance" "${FIXTURE}/performance.off"
+check 3 'nenhum cenário k6' performance/smoke.sh
+printf 'APP_DIR=../fora
+' > "${FIXTURE}/.harness"
+check 1 "APP_DIR '../fora' inválido" build/compile.sh
+printf 'APP_DIR=inexistente
+' > "${FIXTURE}/.harness"
+check 1 "APP_DIR 'inexistente' não existe" verify.sh
+printf 'APP_DIR=app
+COMANDO=$(touch pwned)
+' > "${FIXTURE}/.harness"
+check 1 "chave desconhecida 'COMANDO'" verify.sh
+test ! -e "${FIXTURE}/pwned" && test ! -e "${FIXTURE}/bin/pwned"
+printf 'APP_DIR=app
+QUALITY_GATES=talvez
+' > "${FIXTURE}/.harness"
+check 1 "QUALITY_GATES 'talvez' inválido" quality/coverage.sh
 
 echo "[PASS] Contratos do harness verificados com Maven/Docker simulados. Fixtures: ${FIXTURE}"

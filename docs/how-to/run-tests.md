@@ -5,7 +5,7 @@ Guia operacional para desenvolvedores e agentes. A Etapa 6A separa as suítes e 
 ## Pré-requisitos
 
 - Windows 11 com Git Bash, ou ambiente Bash compatível.
-- Java 27 no PATH; baseline validado com Temurin 27+35.
+- Java no PATH igual ou superior ao `java.version` do pom do app (`setup.sh` compara); baseline deste repositório: Java 27, Temurin 27+35.
 - Maven Wrapper versionado, que resolve Maven 3.10.0; não é necessário Maven global.
 - Docker Desktop funcional com contêineres Linux para integração.
 - Acesso aos repositórios Maven e Docker na primeira resolução dos artefatos.
@@ -21,6 +21,17 @@ bash scripts/quality/coverage.sh     # após as suítes; não executa testes
 bash scripts/verify.sh            # configuração de agentes, build, unitários, arquitetura, integração e cobertura
 bash scripts/quality/mutation.sh     # explícito; fora do verify.sh
 ```
+
+## Onde o harness procura o projeto (`.harness`)
+
+Os scripts ficam na raiz, mas o Maven executa no diretório do app, declarado no arquivo `.harness` da raiz (lido por `scripts/lib/app.sh` como chave=valor, sem executar código):
+
+| Chave | Valores | Efeito |
+|---|---|---|
+| `APP_DIR` | Caminho relativo, sem `..` (padrão `.`) | Onde ficam `pom.xml`, `mvnw`, `src/` e `target/`. Neste repositório, `.`; em projetos criados pelo kit ou pelo seed, sempre `app` ([layout do repositório](../architecture/repository-layout.md)) |
+| `QUALITY_GATES` | `required` (padrão) ou `optional` | Gate não configurado no pom do app (sem a execução `architecture`, o Failsafe, o JaCoCo `coverage-check`, o `pitest-maven` ou as propriedades `app.*`): `required` = FAIL; `optional` = SKIP, com o motivo e o [guia para ativar](enable-quality-gates.md) |
+
+Os caminhos `target/...` deste guia são relativos ao `APP_DIR`. O `check-config.sh` rejeita chaves desconhecidas e, fora deste repositório de referência, um `APP_DIR` diferente de `app`. O `unit.sh` avisa quando há classes `*Tests` (padrão do Spring Initializr), que a convenção não executa.
 
 ## Escolher a suíte
 
