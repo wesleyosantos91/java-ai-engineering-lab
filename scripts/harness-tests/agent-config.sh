@@ -111,6 +111,21 @@ fresh
 echo '{ invalido' > "${f}/.claude/settings.json"
 check 1 '.claude/settings.json não é JSON válido.' "${f}" agents/check-config.sh
 
+# PRD: template em elaboração é aceito (pendências listadas por responsável); aprovado com
+# pendências é rejeitado, e só os campos fora de código contam.
+fresh
+cp "${f}/docs/product/TEMPLATE.md" "${f}/docs/product/prd.md"
+check 0 'PRD em elaboração ou ausente' "${f}" agents/check-config.sh
+check 3 'Engenharia (' "${f}" product/check-prd.sh
+grep -Fq 'Negócio (' "${WORK}/output"
+sed -i 's/^\*\*Status:\*\* Rascunho/**Status:** Aprovado/' "${f}/docs/product/prd.md"
+check 1 'PRD inválido' "${f}" agents/check-config.sh
+check 1 'Aprovado com' "${f}" product/check-prd.sh
+sed -i 's/\[PREENCHER[^]]*\]/ok/g' "${f}/docs/product/prd.md"
+check 0 '[PASS] PRD sem campos pendentes (1 critério' "${f}" product/check-prd.sh
+sed -i '/^### CA-/d' "${f}/docs/product/prd.md"
+check 1 'sem critério de aceitação' "${f}" product/check-prd.sh
+
 # Arquivos ignorados: a cópia vira um repositório Git próprio (sem commits) para que a
 # verificação 8 execute. Preferências locais declaradas são permitidas; um script novo
 # ignorado por padrão genérico (build/) é detectado.

@@ -158,6 +158,15 @@ if (( ${#docs[@]} > 0 )); then
 fi
 (( marker_failures > 0 )) || pass "Marcadores do kit válidos."
 
+# 6c. PRD: pendências são esperadas em elaboração; aprovação com pendências é rejeitada.
+prd_code=0
+prd_output="$(bash "${ROOT_DIR}/scripts/product/check-prd.sh" 2>&1)" || prd_code=$?
+case "${prd_code}" in
+  0) pass "PRD sem campos pendentes." ;;
+  3) echo "[INFO] PRD em elaboração ou ausente; detalhes: bash scripts/product/check-prd.sh." ;;
+  *) printf '%s\n' "${prd_output}" >&2; fail "PRD inválido (scripts/product/check-prd.sh)." ;;
+esac
+
 # 7. Caminhos scripts/*.sh citados em documentação e configuração existem. O registro de
 # aprendizados é histórico imutável e preserva os caminhos da época; fica fora.
 path_failures=0
