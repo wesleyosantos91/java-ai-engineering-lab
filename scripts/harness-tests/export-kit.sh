@@ -17,7 +17,7 @@ expect() {
   local expected="$1" message="$2" code=0
   shift 2
   "$@" > "${WORK}/output" 2>&1 || code=$?
-  if [[ "${code}" != "${expected}" ]] || ! grep -Fq -- "${message}" "${WORK}/output"; then
+  if [[ "${code}" != "${expected}" ]] || { [[ -n "${message}" ]] && ! grep -Fq -- "${message}" "${WORK}/output"; }; then
     cat "${WORK}/output"
     echo "[FAIL] esperado exit=${expected} e '${message}'; observado exit=${code}: $*" >&2
     exit 1
@@ -56,8 +56,11 @@ assert grep -q '"name": "orders-service"' "${dest}/.devcontainer/devcontainer.js
 assert grep -q 'Proposta (herdada do kit' "${dest}/docs/architecture/adr/0001-architecture-principles.md"
 assert test -f "${dest}/.claude/skills/feature-delivery/SKILL.md"
 
-# No destino como repositório Git próprio: check completo (inclui arquivos ignorados) e harness.
+# No destino como repositório Git próprio: arquivos sem espaços inválidos (o primeiro commit passa
+# pelo pre-commit), check completo (inclui arquivos ignorados) e harness.
 git -C "${dest}" init -q
+git -C "${dest}" add -A
+expect 0 '' git -C "${dest}" diff --cached --check
 expect 0 '[PASS] Configuração de agentes verificada.' bash "${dest}/scripts/agents/check-config.sh"
 grep -Fq '[PASS] Arquivos do harness e dos agentes não estão ignorados pelo Git.' "${WORK}/output"
 expect 0 '[PASS] Contratos do harness verificados' bash "${dest}/scripts/harness-tests/harness.sh"

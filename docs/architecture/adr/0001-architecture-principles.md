@@ -90,4 +90,3 @@ As decisões serão verificadas por revisão de código, testes automatizados, t
 ## Revisão da decisão
 
 Este ADR deverá ser revisado quando novas evidências justificarem alterações. Mudanças relevantes deverão ser documentadas em novos ADRs, preservando o histórico.
-  

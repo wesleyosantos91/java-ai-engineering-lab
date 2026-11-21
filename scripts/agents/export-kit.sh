@@ -87,10 +87,14 @@ while IFS= read -r -d '' file; do
     /<!-- kit:omit-end -->/ { skip = 0; next }
     skip { next }
     /<!-- kit:omit-line -->/ { next }
+    # Linhas em branco só são emitidas antes de conteúdo: um bloco omitido no fim do arquivo
+    # não deixa linha em branco sobrando (git diff --check no repositório novo).
+    function emit(text) { for (; blanks > 0; blanks--) print ""; print text }
     /<!-- kit:replace-line: / {
-      text = $0; sub(/.*<!-- kit:replace-line: /, "", text); sub(/ -->.*/, "", text); print text; next
+      text = $0; sub(/.*<!-- kit:replace-line: /, "", text); sub(/ -->.*/, "", text); emit(text); next
     }
-    { print }' "${file}" > "${file}.tmp" && mv "${file}.tmp" "${file}"
+    /^[ \t\r]*$/ { blanks++; next }
+    { emit($0) }' "${file}" > "${file}.tmp" && mv "${file}.tmp" "${file}"
 done < <(find "${STAGE}" -type f -name '*.md' -print0)
 
 # 3. ADRs herdados entram como Proposta, para revisão no novo repositório.

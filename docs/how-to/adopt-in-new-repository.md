@@ -49,7 +49,12 @@ O exportador monta o kit numa área temporária, roda `scripts/agents/check-conf
 Para cada `<arquivo>.kit` listado, incorpore o conteúdo do kit ao arquivo existente e apague o `.kit`. Os casos mais comuns:
 
 - **`pom.xml.kit`** (projeto do Spring Initializr): copie as propriedades `app.basePackage`, `app.basePath` e `app.mainClass`, as versões dos quality gates, `skipUnitTests` e `argLine`, e os plugins `maven-dependency-plugin`, Surefire, Failsafe, JaCoCo e PIT, além das dependências de teste (ArchUnit, Testcontainers, `junit-platform-launcher`).
-- **`.gitignore.kit`**: acrescente o bloco "Agentes de IA (arquivos locais)" e a exceção `!/scripts/build/`.
+- **`.gitignore.kit`** e **`.gitattributes.kit`**: a versão do kit inclui a do Initializr; adote-a, ou acrescente o bloco "Agentes de IA (arquivos locais)", a exceção `!/scripts/build/` e a regra `* text=auto eol=lf`.
+- **`TestcontainersConfiguration.java.kit`**: adote a versão do kit (imagem PostgreSQL fixada por digest e classe pública, reutilizável pelos ITs de outras features).
+- **`.mvn/wrapper/maven-wrapper.properties.kit`**: mantenha a versão mais nova (o Initializr pode trazer um Maven mais recente que o do kit) e ajuste o §2 do `AGENTS.md`.
+- **`*ApplicationTests.java` do Initializr:** remova-o. A convenção do kit não executa `*Tests` (só `*Test` e `*IT`), e o `*ApplicationIT` exportado cobre o teste de contexto com PostgreSQL.
+
+Foi assim que o kit foi validado: com um projeto gerado pelo Spring Initializr (Boot 4.1.2, Java 27, web, jdbc, flyway, postgresql, validation, actuator, testcontainers), o resultado após a mesclagem foi Agentes, Build, Arquitetura e Integração **PASS**, Unitários e Cobertura **SKIP** (sem código de negócio), e o primeiro commit aceito pelos hooks numa branch de trabalho.
 
 ### 3. Adaptar
 
