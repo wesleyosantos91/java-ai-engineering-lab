@@ -28,7 +28,7 @@ Os scripts ficam na raiz, mas o Maven executa no diretório do app, declarado no
 
 | Chave | Valores | Efeito |
 |---|---|---|
-| `APP_DIR` | Caminho relativo, sem `..` (padrão `.`) | Onde ficam `pom.xml`, `mvnw`, `src/` e `target/`. Neste repositório, `.`; em projetos criados pelo kit ou pelo seed, sempre `app` ([layout do repositório](../architecture/repository-layout.md)) |
+| `APP_DIR` | Caminho relativo, sem `..` (padrão `.`) | Onde ficam `pom.xml`, `mvnw`, `src/` e `target/`. Neste repositório, `.`; nos projetos que recebem o kit, sempre `app` ([layout do repositório](../architecture/repository-layout.md)) |
 | `QUALITY_GATES` | `required` (padrão) ou `optional` | Gate não configurado no pom do app (sem a execução `architecture`, o Failsafe, o JaCoCo `coverage-check`, o `pitest-maven` ou as propriedades `app.*`): `required` = FAIL; `optional` = SKIP, com o motivo e o [guia para ativar](enable-quality-gates.md) |
 
 | `REPOSITORY_ROLE` | `project` (padrão) ou `reference` | Só `reference` (este repositório) aceita `APP_DIR` diferente de `app` |
@@ -131,7 +131,7 @@ bash scripts/harness-tests/agent-config.sh
 bash scripts/harness-tests/git-hooks.sh
 ```
 
-O exportador do kit tem teste próprio, em destinos temporários: `bash scripts/harness-tests/export-kit.sh` (kit só de configuração, seed e `init-project.sh` num projeto criado do seed). <!-- kit:omit-line -->
+O kit tem teste próprio: `bash scripts/harness-tests/export-kit.sh` instala a configuração num monorepo de exemplo, a partir deste repositório e pelo seed, e confere por hash que nada do projeto mudou. <!-- kit:omit-line -->
 
 A primeira verificação simula `agents/check-config.sh`, que tem teste próprio (a quarta verificação), e cobre ausência de suítes, falhas Maven/Docker, XML ausente/obsoleto, zero testes, testes ignorados, resumo e interrupção de etapas. A segunda verifica Surefire com Docker inacessível, Mockito inline sem attach dinâmico, Failsafe com PostgreSQL sem repetir unitários e uma falha deliberada de IT que deve retornar erro em `verify`. Essa falha esperada só existe na cópia e o script retorna sucesso apenas se ela for rejeitada.
 

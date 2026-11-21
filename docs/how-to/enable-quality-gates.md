@@ -19,7 +19,7 @@ Este guia descreve o que adicionar para que JaCoCo, PIT e ArchUnit executem de f
 1. **Propriedades** em `<properties>`: `app.basePackage`, `app.basePath` e `app.mainClass` (pacote e classe `@SpringBootApplication` do app), `skipUnitTests` (`false`), `argLine` vazia e as versões de JaCoCo, PIT e ArchUnit.
 2. **Plugins:** `maven-dependency-plugin` (execução `resolve-test-agent`, para o agent do Mockito), Surefire (`default-test` e `architecture`), Failsafe, JaCoCo e PIT, com as metas LINE ≥ 90%, BRANCH ≥ 90% e mutation score ≥ 90%.
 3. **Dependências de teste:** ArchUnit, Testcontainers (PostgreSQL) e `junit-platform-launcher`.
-4. **Classes de teste** em `app/src/test/java/<pacote>/`: `architecture/ArchitectureTest.java`, `TestcontainersConfiguration.java`, `<Main>IT.java` e `Test<Main>.java`, adaptadas do seed.
+4. **Classes de teste** em `app/src/test/java/<pacote>/`: `architecture/ArchitectureTest.java`, `TestcontainersConfiguration.java`, `<Main>IT.java` e `Test<Main>.java`, prontas na seção "Blocos prontos para este projeto", que o instalador acrescenta a este guia no projeto.
 5. **Convenção de nomes:** renomeie `*Tests` para `*Test` (unitários) ou `*IT` (integração).
 6. Troque `QUALITY_GATES=optional` por `QUALITY_GATES=required` no `.harness`. A partir daí, um gate não configurado reprova o `verify.sh`.
 7. Verifique com `bash scripts/verify.sh` e `bash scripts/quality/mutation.sh`. A capacidade de rejeitar violações pode ser provada com `bash scripts/harness-tests/quality-gates.sh`.

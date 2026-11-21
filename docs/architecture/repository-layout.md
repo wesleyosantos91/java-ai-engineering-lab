@@ -14,7 +14,7 @@ A configuração AI-First fica na **raiz** e vale para o repositório inteiro: o
 | `tests/` | Testes fora do app (por exemplo, `tests/performance/k6/`) | Harness e pipelines | Sim, dentro do escopo autorizado |
 | `.github/` | Workflows, CODEOWNERS e templates | GitHub Actions e GitHub | **Não**: gerido por DevOps. Proponha a mudança ao time responsável |
 
-Neste repositório de referência, o projeto Maven fica na raiz (`.harness` com `APP_DIR=.`). Em projetos criados pelo [kit ou pelo seed](../how-to/adopt-in-new-repository.md), ele fica sempre em `app/`. <!-- kit:replace-line: O projeto Maven fica sempre em `app/` (`app/pom.xml`; `.harness` com `APP_DIR=app`). -->
+Neste repositório de referência, o projeto Maven fica na raiz (`.harness` com `APP_DIR=.`). Nos projetos que recebem o [kit](../how-to/adopt-in-new-repository.md), ele fica sempre em `app/`. <!-- kit:replace-line: O projeto Maven fica sempre em `app/` (`app/pom.xml`; `.harness` com `APP_DIR=app`). -->
 
 ## Regras e verificações por diretório
 

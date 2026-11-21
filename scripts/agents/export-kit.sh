@@ -1,101 +1,77 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-# Exporta a configuração AI-First (instruções e skills dos agentes, harness, documentação de
-# engenharia, PRD guiado) para a raiz de outro repositório. Guia: docs/how-to/adopt-in-new-repository.md.
+# Kit AI-First: monta a configuração reutilizável deste repositório (instruções e skills dos agentes,
+# harness, documentação de engenharia, PRD guiado, ADRs propostos) e a aplica num monorepo existente
+# ou grava o instalador público (seed). Guia: docs/how-to/adopt-in-new-repository.md.
 #
-# Uso: bash scripts/agents/export-kit.sh <destino> [--project-name <nome>]
-#      bash scripts/agents/export-kit.sh <destino> --seed
+# Uso: bash scripts/agents/export-kit.sh <diretório do projeto>   aplica no projeto (app/ existente)
+#      bash scripts/agents/export-kit.sh --seed <diretório>       grava o instalador (seed)
 #
-# Layout de destino (docs/architecture/repository-layout.md): configuração na raiz e projeto Maven
-# sempre em <destino>/app.
-# - Padrão: SOMENTE configuração. Nada é gravado em app/, infra/, tests/ nem .github/ (gerido por
-#   DevOps). O pacote e a classe principal são detectados no app (leitura) e usados nos textos.
-#   Os quality gates ficam opcionais (.harness QUALITY_GATES=optional) até o pom do app ser
-#   configurado (docs/how-to/enable-quality-gates.md).
-# - --seed: configuração + chassi público (GitHub Template): app/ compilável com pacote
-#   com.example.seed e classe SeedApplication, infra/, tests/, LICENSE/NOTICE e README de uso;
-#   gates obrigatórios. scripts/agents/init-project.sh troca os nomes no repositório criado.
-# - Arquivos que já existem no destino nunca são sobrescritos: a versão do kit é gravada como
-#   <arquivo>.kit para mesclagem manual.
-# - Marcadores nos Markdown (<!-- kit:omit-line -->, <!-- kit:replace-line: TEXTO -->,
-#   <!-- kit:omit-start --> ... <!-- kit:omit-end -->) removem ou substituem trechos do projeto.
-# Retornos: 0 = kit exportado e verificado; 1 = erro (destino intacto).
+# O kit montado tem a forma do seed:
+#   install.sh     instalador: bash install.sh <diretório do projeto>
+#   lib/           biblioteca do instalador
+#   payload/       configuração que vai para a raiz do projeto, com marcadores neutros
+#   templates/     pom e classes de teste de referência para os blocos de quality gates
+# A aplicação é sempre feita pelo instalador: só configuração na raiz, nada em app/, infra/,
+# tests/, .github/ nem no README.md do projeto (docs/architecture/repository-layout.md).
+# Marcadores nos Markdown (<!-- kit:omit-line -->, <!-- kit:replace-line: TEXTO -->,
+# <!-- kit:omit-start --> ... <!-- kit:omit-end -->) removem ou substituem trechos deste produto.
+# Retornos: 0 = kit aplicado (ou seed gravado) e verificado; 1 = erro (destino intacto).
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 ROOT_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd -P)"
 source "${SCRIPT_DIR}/../lib/app.sh" || exit 1
 source "${SCRIPT_DIR}/../lib/pom.sh"
-source "${SCRIPT_DIR}/../lib/rename.sh"
+source "${SCRIPT_DIR}/kit/rename.sh"
 
-# Nomes do seed: init-project.sh os procura para renomear (não altere um sem o outro).
-SEED_PACKAGE=com.example.seed
-SEED_MAIN=SeedApplication
-SEED_NAME='Java AI-First Seed'
-SEED_SLUG=java-ai-first-seed
-# Diretório do projeto Maven no destino (fixo: docs/architecture/repository-layout.md).
-DEST_APP=app
+# Marcadores neutros do payload; o instalador os troca pelos valores detectados no projeto.
+KIT_PACKAGE=com.example.kitapp
+KIT_MAIN=KitMainApplication
+KIT_NAME='@@PROJECT_NAME@@'
+KIT_SLUG='@@PROJECT_SLUG@@'
 
 usage() {
-  echo "Uso: bash scripts/agents/export-kit.sh <destino> [--project-name <nome>]" >&2
-  echo "     bash scripts/agents/export-kit.sh <destino> --seed" >&2
+  echo "Uso: bash scripts/agents/export-kit.sh <diretório do projeto>" >&2
+  echo "     bash scripts/agents/export-kit.sh --seed <diretório>" >&2
   exit 1
 }
-
-dest='' project_name='' seed=0
-while (( $# )); do
-  case "$1" in
-    --project-name) [[ -n "${2:-}" ]] || usage; project_name="$2"; shift 2 ;;
-    --seed) seed=1; shift ;;
-    -h|--help) usage ;;
-    -*) echo "[FAIL] Opção desconhecida: $1" >&2; usage ;;
-    *) [[ -z "${dest}" ]] || usage; dest="$1"; shift ;;
-  esac
-done
-[[ -n "${dest}" ]] || usage
-if (( seed )) && [[ -n "${project_name}" ]]; then
-  echo "[FAIL] --seed usa nomes fixos; personalize depois com scripts/agents/init-project.sh." >&2; exit 1
-fi
+seed=0
+case "${1:-}" in
+  --seed) seed=1; shift ;;
+  -h|--help|'') usage ;;
+  -*) echo "[FAIL] Opção desconhecida: $1" >&2; usage ;;
+esac
+(( $# == 1 )) || usage
+[[ "$1" != -* ]] || usage
 
 # Origem: pacote, caminho e classe principal declarados no pom do app deste repositório.
 old_package="$(pom_property app.basePackage)" || exit 1
 old_path="$(pom_property app.basePath)" || exit 1
 old_main="$(pom_property app.mainClass)" || exit 1
 
-[[ ! -e "${dest}" || -d "${dest}" ]] || { echo "[FAIL] Destino existe e não é diretório: ${dest}" >&2; exit 1; }
-# Resolve sem criar nada: o destino não pode ser este repositório nem ficar dentro dele
-# (exceto em target/, usado pelos testes do harness).
-DEST="$(realpath -m -- "${dest}")"
+# O destino não pode ser este repositório nem ficar dentro dele (exceto em target/, usado pelos
+# testes do harness).
+DEST="$(realpath -m -- "$1")"
+[[ ! -e "${DEST}" || -d "${DEST}" ]] || { echo "[FAIL] Destino existe e não é diretório: ${DEST}" >&2; exit 1; }
 case "${DEST}/" in
   "${ROOT_DIR}/target/"*) ;;
   "${ROOT_DIR}/"*) echo "[FAIL] O destino não pode estar dentro deste repositório: ${DEST}" >&2; exit 1 ;;
 esac
-
-# Projeto de destino (modo padrão): somente leitura de <destino>/app.
-detected_package='' detected_main='' java_version='' boot_version=''
-if (( seed )); then
-  new_package="${SEED_PACKAGE}" new_main="${SEED_MAIN}" project_name="${SEED_NAME}"
-else
-  dest_pom="${DEST}/${DEST_APP}/pom.xml"
-  if [[ -f "${dest_pom}" ]]; then
-    java_version="$(sed -n 's#.*<java.version>\([^<]*\)</java.version>.*#\1#p' "${dest_pom}" | head -n 1)"
-    boot_version="$(awk '/<parent>/,/<\/parent>/' "${dest_pom}" | sed -n 's#.*<version>\([^<]*\)</version>.*#\1#p' | head -n 1)"
-  fi
-  if [[ -d "${DEST}/${DEST_APP}/src/main/java" ]]; then
-    main_file="$(grep -rlE '^@SpringBootApplication' "${DEST}/${DEST_APP}/src/main/java" --include='*.java' | sort | head -n 1 || true)"
-    if [[ -n "${main_file}" ]]; then
-      detected_main="$(basename -- "${main_file}" .java)"
-      detected_package="$(sed -n 's/^package \([a-zA-Z0-9_.]*\);.*/\1/p' "${main_file}" | head -n 1)"
-    fi
-  fi
-  new_package="${detected_package:-com.example.app}" new_main="${detected_main:-Application}"
+if (( seed )) && [[ -e "${DEST}" ]] && [[ -n "$(find "${DEST}" -mindepth 1 -maxdepth 1 ! -name .git -print -quit)" ]]; then
+  echo "[FAIL] --seed exige um diretório vazio (ou só com .git): ${DEST}" >&2; exit 1
+fi
+if (( ! seed )) && [[ ! -d "${DEST}" ]]; then
+  echo "[FAIL] Diretório do projeto não encontrado: ${DEST}" >&2; exit 1
 fi
 
-STAGE="$(mktemp -d)"
-trap 'rm -rf "${STAGE}"' EXIT
+KIT="$(mktemp -d)"
+trap 'rm -rf "${KIT}"' EXIT
+STAGE="${KIT}/payload"
+mkdir -p "${STAGE}" "${KIT}/lib" "${KIT}/templates/test/architecture"
 
 # 1. Configuração AI-First: somente arquivos versionáveis (rastreados ou novos não ignorados).
-#    Sem .github/ (DevOps), sem código do app e sem artefatos deste produto.
+#    Sem .github/ (DevOps), sem código do app, sem README e sem artefatos deste produto.
 include=(
   AGENTS.md CLAUDE.md CONTRIBUTING.md SECURITY.md
   .agents .claude/settings.json .codex .devcontainer scripts
@@ -111,10 +87,8 @@ include=(
 )
 (cd "${ROOT_DIR}" && git ls-files -z --cached --others --exclude-standard -- "${include[@]}" |
   tar --null -T - -cf -) | (cd "${STAGE}" && tar -xf -)
-# Ferramentas do kit ficam neste repositório: o projeto gerado não depende delas. O seed leva só a
-# inicialização (init-project.sh e rename.sh), que se remove depois de executada.
-rm -f "${STAGE}/scripts/agents/export-kit.sh" "${STAGE}/scripts/harness-tests/export-kit.sh"
-(( seed )) || rm -f "${STAGE}/scripts/agents/init-project.sh" "${STAGE}/scripts/lib/rename.sh"
+# As ferramentas do kit ficam neste repositório e no seed: o projeto não depende delas.
+rm -rf "${STAGE}/scripts/agents/export-kit.sh" "${STAGE}/scripts/agents/kit" "${STAGE}/scripts/harness-tests/export-kit.sh"
 
 # 2. Marcadores do kit em todos os Markdown.
 while IFS= read -r -d '' file; do
@@ -159,281 +133,121 @@ done
 # 4. PRD inicial a partir do template.
 cp "${STAGE}/docs/product/TEMPLATE.md" "${STAGE}/docs/product/prd.md"
 
-# 5. Seed: chassi do app e diretórios de projeto, montados sob app/, infra/ e tests/.
-write_seed_chassis() {
-  local app="${STAGE}/${DEST_APP}" main_dir resources
-  mkdir -p "${app}"
-  # Build e testes de infraestrutura do app de origem, já no caminho app/.
-  (cd "${APP_ROOT}" && git ls-files -z --cached --others --exclude-standard -- \
-    pom.xml mvnw mvnw.cmd .mvn \
-    "src/test/java/${old_path}/TestcontainersConfiguration.java" \
-    "src/test/java/${old_path}/${old_main}IT.java" \
-    "src/test/java/${old_path}/Test${old_main}.java" \
-    "src/test/java/${old_path}/architecture" | tar --null -T - -cf -) | (cd "${app}" && tar -xf -)
-  main_dir="${app}/src/main/java/${old_path}" resources="${app}/src/main/resources"
-  mkdir -p "${main_dir}" "${resources}/db/migration"
-  cat > "${main_dir}/${old_main}.java" <<EOF
-package ${old_package};
+# 5. AGENTS.md: propósito pronto para o negócio e tabela de scripts do projeto (sem o kit).
+awk '
+  /^\[PREENCHER: propósito do projeto\]\.?$/ {
+    print "Propósito: [PREENCHER-NEGÓCIO: o que o sistema faz e para quem, em uma frase]. Requisitos: [PRD](docs/product/prd.md)."; next }
+  /^\| `agents\/`, `product\/` \|/ { print "| `agents/`, `product/` | `check-config.sh`, `sync-skills.sh`, `list-pending.sh`, hooks; `check-prd.sh` |"; next }
+  { print }' "${STAGE}/AGENTS.md" > "${STAGE}/AGENTS.md.tmp" && mv "${STAGE}/AGENTS.md.tmp" "${STAGE}/AGENTS.md"
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+# 6. Referências deste produto viram marcadores neutros (o instalador aplica os do projeto).
+rename_package "${STAGE}" "${old_package}" "${KIT_PACKAGE}"
+rename_literal "${STAGE}" "${old_main}" "${KIT_MAIN}"
+rename_literal "${STAGE}" 'Java AI Engineering Lab' "${KIT_NAME}"
+sed -i "0,/\"name\": \"[^\"]*\"/ s##\"name\": \"${KIT_SLUG}\"#" "${STAGE}/.devcontainer/devcontainer.json"
 
-@SpringBootApplication
-public class ${old_main} {
+# 7. Templates dos blocos de quality gates: pom e testes de infraestrutura deste repositório.
+cp "${APP_ROOT}/pom.xml" "${KIT}/templates/pom.xml"
+test_root="${APP_ROOT}/src/test/java/${old_path}"
+cp "${test_root}/architecture/ArchitectureTest.java" "${KIT}/templates/test/architecture/"
+cp "${test_root}/TestcontainersConfiguration.java" "${KIT}/templates/test/"
+cp "${test_root}/${old_main}IT.java" "${KIT}/templates/test/${KIT_MAIN}IT.java"
+cp "${test_root}/Test${old_main}.java" "${KIT}/templates/test/Test${KIT_MAIN}.java"
+rename_literal "${KIT}/templates" "${old_package}" "${KIT_PACKAGE}"
+rename_literal "${KIT}/templates" "${old_path}" "${KIT_PACKAGE//.//}"
+rename_literal "${KIT}/templates" "${old_main}" "${KIT_MAIN}"
 
-	public static void main(String[] args) {
-		SpringApplication.run(${old_main}.class, args);
-	}
+# 8. Instalador.
+cp "${SCRIPT_DIR}/kit/install.sh" "${KIT}/install.sh"
+cp "${SCRIPT_DIR}/kit/rename.sh" "${KIT}/lib/rename.sh"
 
-}
-EOF
-  cat > "${resources}/application.yaml" <<EOF
-spring:
-  application:
-    name: ${SEED_SLUG}
-  jackson:
-    deserialization:
-      # Propriedades JSON desconhecidas são rejeitadas, nunca ignoradas (ajuste conforme o PRD).
-      fail-on-unknown-properties: true
-  mvc:
-    problemdetails:
-      enabled: true
-EOF
-  : > "${resources}/db/migration/.gitkeep"
-  # Identidade do projeto: groupId e artifactId logo após o <parent>.
-  sed -i "/<\/parent>/,/<artifactId>/ { s#<groupId>[^<]*</groupId>#<groupId>com.example</groupId>#; s#<artifactId>[^<]*</artifactId>#<artifactId>${SEED_SLUG}</artifactId>#; }" \
-    "${app}/pom.xml"
+# Nenhum resíduo deste produto no kit (o README do seed, escrito abaixo, cita a origem).
+residue="$(grep -rlIE "${old_package//./\\.}|${old_path}|${old_main}|Java AI Engineering Lab" "${KIT}" || true)"
+if [[ -n "${residue}" ]]; then
+  printf '%s\n' "${residue}" >&2
+  echo "[FAIL] Kit com referências deste produto; destino não alterado." >&2; exit 1
+fi
 
-  # Cenário k6 de disponibilidade em tests/ (fora do app).
-  mkdir -p "${STAGE}/tests/performance/k6" "${STAGE}/infra"
-  cp "${ROOT_DIR}/tests/performance/k6/smoke.js" "${STAGE}/tests/performance/k6/smoke.js"
-  cat > "${STAGE}/infra/README.md" <<'EOF'
-# infra
+if (( ! seed )); then
+  bash "${KIT}/install.sh" "${DEST}"
+  exit
+fi
 
-Infraestrutura como código, compose e configuração de ambiente consumidos pelos pipelines. Regras para agentes e verificações: [layout do repositório](../docs/architecture/repository-layout.md).
-EOF
-  cat > "${STAGE}/tests/README.md" <<'EOF'
-# tests
-
-Testes que ficam fora do projeto Maven, executados pelo harness ou pelos pipelines. `performance/k6/smoke.js` é o smoke de disponibilidade de `bash scripts/performance/smoke.sh`. Testes unitários, de arquitetura e de integração ficam em `app/src/test/java`. Regras: [layout do repositório](../docs/architecture/repository-layout.md).
-EOF
-
-  [[ -f "${ROOT_DIR}/LICENSE" && -f "${ROOT_DIR}/NOTICE" ]] ||
-    { echo "[FAIL] --seed exige LICENSE e NOTICE na raiz do repositório de origem." >&2; exit 1; }
-  cp "${ROOT_DIR}/LICENSE" "${STAGE}/LICENSE"
-  sed "1s/.*/${SEED_NAME}/" "${ROOT_DIR}/NOTICE" > "${STAGE}/NOTICE"
-  cat > "${STAGE}/README.md" <<'EOF'
+# 9. Seed: o instalador público, verificado num projeto de exemplo antes de ser gravado.
+probe="$(mktemp -d)"
+trap 'rm -rf "${KIT}" "${probe}"' EXIT
+mkdir -p "${probe}/app/src/main/java/com/acme/probe"
+printf '<project>\n\t<parent>\n\t\t<version>4.1.2</version>\n\t</parent>\n\t<artifactId>probe</artifactId>\n\t<properties><java.version>27</java.version></properties>\n</project>\n' > "${probe}/app/pom.xml"
+printf 'package com.acme.probe;\n\n@SpringBootApplication\npublic class ProbeApplication {}\n' > "${probe}/app/src/main/java/com/acme/probe/ProbeApplication.java"
+if ! probe_output="$(bash "${KIT}/install.sh" "${probe}" 2>&1)"; then
+  printf '%s\n' "${probe_output}" >&2
+  echo "[FAIL] O instalador falhou no projeto de exemplo; seed não gravado." >&2; exit 1
+fi
+rm -rf "${probe}"
+[[ -f "${ROOT_DIR}/LICENSE" && -f "${ROOT_DIR}/NOTICE" ]] ||
+  { echo "[FAIL] --seed exige LICENSE e NOTICE na raiz deste repositório." >&2; exit 1; }
+cp "${ROOT_DIR}/LICENSE" "${KIT}/LICENSE"
+sed '1s/.*/Java AI-First Seed/' "${ROOT_DIR}/NOTICE" > "${KIT}/NOTICE"
+# Scripts com LF em qualquer sistema (o instalador roda no Git Bash do Windows).
+printf '* text=auto eol=lf\n*.cmd text eol=crlf\n' > "${KIT}/.gitattributes"
+cat > "${KIT}/README.md" <<'EOF'
 # Java AI-First Seed
 
-Chassi de contexto para projetos Java desenvolvidos com agentes de IA (Codex, Claude Code, Devin). Não contém regra de negócio: traz as instruções dos agentes, as skills, o harness de verificação, os quality gates e um PRD guiado para o time de negócio preencher.
+Instalador da configuração AI-First para monorepos Java com agentes de IA (Codex, Claude Code, Devin): instruções e skills dos agentes, harness de verificação, quality gates, PRD guiado e ADRs propostos.
 
-## Estrutura
+Ele **não cria projeto**. Você aponta o diretório de um monorepo que já existe, com o projeto Maven em `app/`, e o instalador adiciona só a configuração na raiz.
 
-| Diretório | Conteúdo |
+## Uso
+
+```bash
+git clone https://github.com/wesleyosantos91/java-ai-first-seed.git
+bash java-ai-first-seed/install.sh /caminho/do/monorepo
+```
+
+O instalador:
+
+- **detecta** em `app/` (só leitura) a classe `@SpringBootApplication`, o pacote, o Java, o Spring Boot, os starters e o nome do projeto;
+- **grava só configuração na raiz:** `AGENTS.md`, `CLAUDE.md`, `.agents/`, `.claude/`, `.codex/`, `docs/`, `scripts/`, `.harness` e arquivos de editor e Git;
+- **não altera** `app/`, `infra/`, `tests/`, `.github/` nem o `README.md` do projeto. Se um arquivo de configuração já existe e é diferente, a versão do kit fica ao lado como `<arquivo>.kit`;
+- verifica tudo numa área temporária antes de gravar. Se algo falhar, o projeto não é alterado.
+
+Nada deste repositório é copiado para o projeto: ele continua sem depender do seed.
+
+## Estrutura esperada do projeto
+
+```text
+<monorepo>/
+├── app/        projeto Maven (app/pom.xml), obrigatório
+├── infra/      infraestrutura (por exemplo, Terraform), opcional
+├── tests/      testes fora do app, opcional
+└── .github/    CI do time de DevOps, opcional
+```
+
+## Depois de instalar
+
+| Quem | O quê |
 |---|---|
-| Raiz: [AGENTS.md](AGENTS.md), `.agents/`, `.claude/`, `.codex/`, `docs/`, `scripts/`, `.harness` | Configuração AI-First, que vale para o repositório inteiro |
-| `app/` | Projeto Maven: Spring Boot 4, Java 27, Spring JDBC, PostgreSQL, Flyway, Testcontainers; sem endpoints |
-| `infra/` | Infraestrutura como código e configuração de ambiente |
-| `tests/` | Testes fora do app (smoke k6 em `tests/performance/k6/`) |
-| `.github/` | Não vem no seed: workflows, CODEOWNERS e templates são configurados pelo time de DevOps, e agentes não os alteram |
+| Negócio | PRD em `docs/product/prd.md` (cada seção diz quem preenche) e propósito no `AGENTS.md` §1 |
+| Engenharia | Seção "Revisão neste projeto" dos ADRs 0001 a 0003, persistência no `AGENTS.md` §2 e licença no `CONTRIBUTING.md` |
+| Engenharia | Quality gates: blocos de pom e testes prontos no fim de `docs/how-to/enable-quality-gates.md` |
 
-Detalhes e regras por diretório: [layout do repositório](docs/architecture/repository-layout.md).
+```bash
+bash scripts/agents/list-pending.sh   # o que falta preencher, por responsável
+bash scripts/git/install-hooks.sh     # hooks de commit (exige repositório Git)
+bash scripts/verify.sh                # agentes, build e testes do app/
+```
 
-## Como começar
-
-1. **Criar o repositório:** botão *Use this template* no GitHub e clone do novo repositório.
-2. **Dar nome ao projeto** (pacote, classe principal, identidade Maven em `app/pom.xml` e este README):
-
-   ```bash
-   bash scripts/agents/init-project.sh --base-package com.acme.orders \
-     --main-class OrdersApplication --project-name "Orders Service"
-   ```
-
-3. **Time de negócio: preencher o PRD** em [docs/product/prd.md](docs/product/prd.md). Cada seção diz quem a preenche (`Negócio`, `Engenharia` ou `Ambos`) e se é obrigatória; os campos pendentes aparecem como `[PREENCHER-NEGÓCIO: ...]` e `[PREENCHER-ENGENHARIA: ...]`. Para ver o que falta, por responsável:
-
-   ```bash
-   bash scripts/product/check-prd.sh
-   ```
-
-   O PRD só pode ser marcado como **Aprovado** sem pendências; a verificação dos agentes falha caso contrário.
-
-4. **Engenharia:** complete as seções técnicas do PRD, ajuste o `AGENTS.md` (§1 propósito, §2 stack), revise os ADRs herdados e a licença.
-5. **Ativar o harness:**
-
-   ```bash
-   bash scripts/git/install-hooks.sh
-   bash scripts/setup.sh
-   bash scripts/verify.sh
-   ```
-
-   Sem código de negócio, unitários e cobertura retornam SKIP e o resultado é PARCIAL. É o esperado até a primeira feature.
-
-6. **Primeira feature:** com o PRD aprovado, peça ao agente a skill `feature-delivery`.
+Até os quality gates serem configurados no `app/pom.xml`, eles aparecem como SKIP com o motivo, e o `verify.sh` termina PARCIAL. É o esperado.
 
 ## Origem
 
-Este template é gerado pelo exportador do kit (modo `--seed`) do repositório de referência [java-ai-engineering-lab](https://github.com/wesleyosantos91/java-ai-engineering-lab). Correções no chassi são feitas lá e chegam aqui por regeneração. O projeto criado pelo `init-project.sh` não depende deste template nem do repositório de referência.
+Gerado pelo exportador do kit (`--seed`) do repositório de referência [java-ai-engineering-lab](https://github.com/wesleyosantos91/java-ai-engineering-lab). Correções são feitas lá e chegam aqui por regeneração.
 
 ## Licença
 
-[Apache License 2.0](LICENSE). Projetos criados a partir deste template escolhem a própria licença.
+[Apache License 2.0](LICENSE).
 EOF
-}
-if (( seed )); then write_seed_chassis; fi
-
-# 6. Pacote base e classe principal: os do seed, ou os detectados no app de destino (só nos
-#    textos da configuração; o app de destino não é tocado). Nome do projeto nos documentos.
-rename_package "${STAGE}" "${old_package}" "${new_package}" "${DEST_APP}"
-rename_main_class "${STAGE}" "${old_main}" "${new_main}" "${DEST_APP}"
-name="${project_name:-[PREENCHER-NEGÓCIO: nome do projeto]}"
-rename_literal "${STAGE}" 'Java AI Engineering Lab' "${name}"
-slug="$(project_slug "${project_name:-app}")"
-# Só a primeira ocorrência: o nome do contêiner, não de outros objetos do arquivo.
-sed -i "0,/\"name\": \"[^\"]*\"/ s##\"name\": \"${slug:-app}\"#" "${STAGE}/.devcontainer/devcontainer.json"
-
-# 7. AGENTS.md com as seções do projeto prontas: propósito (negócio), stack detectada no app
-#    (engenharia só completa o que não dá para detectar) e scripts que existem no destino.
-tools='`check-config.sh`, `sync-skills.sh`, `list-pending.sh`, hooks; `check-prd.sh`'
-(( ! seed )) || tools='`check-config.sh`, `sync-skills.sh`, `list-pending.sh`, `init-project.sh`, hooks; `check-prd.sh`'
-purpose='Propósito: [PREENCHER-NEGÓCIO: o que o sistema faz e para quem, em uma frase]. Requisitos: [PRD](docs/product/prd.md).'
-stack='' persistence=''
-if (( ! seed )); then
-  starters=''
-  [[ ! -f "${dest_pom:-}" ]] || starters="$(sed -n 's#.*<artifactId>spring-boot-starter-\([a-z-]*\)</artifactId>.*#\1#p' "${dest_pom}" |
-    grep -v -e '-test$' -e '^parent$' | sort -u | paste -sd, - | sed 's/,/, /g' || true)"
-  if [[ -n "${java_version}" && -n "${boot_version}" ]]; then
-    stack="- Java ${java_version}, Spring Boot ${boot_version}, Maven via Wrapper em \`app/\` (detectado em \`app/pom.xml\`; starters: ${starters:-nenhum})."
-  else
-    stack='- [PREENCHER-ENGENHARIA: Java, Spring Boot e build do app (app/pom.xml não encontrado na exportação)].'
-  fi
-  persistence='- Persistência e integração: [PREENCHER-ENGENHARIA: banco, migrações e testes de integração; os ADRs propostos sugerem Spring JDBC, PostgreSQL, Flyway e Testcontainers].'
-fi
-awk -v tools="${tools}" -v purpose="${purpose}" -v stack="${stack}" -v persistence="${persistence}" '
-  /^\[PREENCHER: propósito do projeto\]\.?$/ { print purpose; next }
-  stack != "" && /^- Java [0-9]+, Spring Boot / { print stack; next }
-  persistence != "" && /^- Spring JDBC com SQL explícito/ { print persistence; next }
-  /^\| `agents\/`, `product\/` \|/ { print "| `agents/`, `product/` | " tools " |"; next }
-  { print }' "${STAGE}/AGENTS.md" > "${STAGE}/AGENTS.md.tmp" && mv "${STAGE}/AGENTS.md.tmp" "${STAGE}/AGENTS.md"
-
-# 7b. Guia de quality gates com os blocos prontos para este projeto: extraídos do pom e dos
-#     testes de infraestrutura deste repositório, com o pacote e a classe do projeto.
-write_gate_blocks() {
-  local guide="${STAGE}/docs/how-to/enable-quality-gates.md" pom="${APP_ROOT}/pom.xml"
-  local test_root="${APP_ROOT}/src/test/java/${old_path}" new_path="${new_package//.//}"
-  local deps='archunit|junit-platform-launcher|spring-boot-testcontainers|testcontainers-junit-jupiter|testcontainers-postgresql'
-  adapt() { sed -e "s#${old_package//./\\.}#${new_package}#g" -e "s#${old_path}#${new_path}#g" -e "s#${old_main}#${new_main}#g"; }
-  code() { printf '\n```%s\n' "$1"; cat; printf '```\n'; }
-  {
-    printf '\n## Blocos prontos para este projeto\n\n'
-    printf 'Gerados para o pacote `%s` e a classe `%s`. Copie cada bloco para o lugar indicado e ajuste só o que o projeto não usar.\n' "${new_package}" "${new_main}"
-    printf '\n### 1. `app/pom.xml`: propriedades (dentro de `<properties>`)\n'
-    awk '/<properties>/ { on = 1; next } /<\/properties>/ { on = 0 } on && !/<java.version>/' "${pom}" | adapt | code xml
-    printf '\n### 2. `app/pom.xml`: dependências de teste (dentro de `<dependencies>`)\n\nSe o app não usa banco, omita as três dependências de Testcontainers.\n'
-    awk -v deps="^(${deps})$" '
-      /<dependency>/ { block = ""; on = 1 }
-      on { block = block $0 "\n" }
-      on && /<artifactId>/ { id = $0; gsub(/.*<artifactId>|<\/artifactId>.*/, "", id) }
-      /<\/dependency>/ && on { if (id ~ deps) printf "%s", block; on = 0 }' "${pom}" | code xml
-    printf '\n### 3. `app/pom.xml`: plugins (dentro de `<build><plugins>`)\n'
-    awk '
-      /<plugin>/ && depth == 0 { block = ""; on = 1 }
-      on { block = block $0 "\n" }
-      on && /<artifactId>spring-boot-maven-plugin<\/artifactId>/ { skip = 1 }
-      /<plugin>/ { depth++ } /<\/plugin>/ { depth-- }
-      on && depth == 0 { if (!skip) printf "%s", block; on = 0; skip = 0 }' "${pom}" | adapt | code xml
-    printf '\n### 4. Classes de teste em `app/src/test/java/%s/`\n' "${new_path}"
-    local file
-    for file in architecture/ArchitectureTest.java TestcontainersConfiguration.java "${old_main}IT.java" "Test${old_main}.java"; do
-      [[ -f "${test_root}/${file}" ]] || continue
-      printf '\n`%s`:\n' "$(adapt <<<"${file}")"
-      adapt < "${test_root}/${file}" | code java
-    done
-    printf '\nSem banco, troque `%sIT` por um teste de contexto sem Testcontainers e não crie `TestcontainersConfiguration` nem `Test%s`:\n' "${new_main}" "${new_main}"
-    printf 'package %s;\n\nimport org.junit.jupiter.api.Test;\nimport org.springframework.boot.test.context.SpringBootTest;\n\n@SpringBootTest\nclass %sIT {\n\n\t@Test\n\tvoid contextLoads() {\n\t}\n\n}\n' \
-      "${new_package}" "${new_main}" | code java
-    printf '\n### 5. Ativar\n\nCom os blocos aplicados e `bash scripts/verify.sh` verde, troque `QUALITY_GATES=optional` por `QUALITY_GATES=required` no `.harness`.\n'
-  } >> "${guide}"
-}
-write_gate_blocks
-
-# 8. .harness: projeto Maven em app/; gates obrigatórios no seed, opcionais num projeto existente
-#    até o pom do app ser configurado.
-gates=optional
-(( ! seed )) || gates=required
-cat > "${STAGE}/.harness" <<EOF
-# Configuração do harness (scripts/lib/app.sh); chave=valor, sem execução de código.
-# APP_DIR: projeto Maven, sempre app/ (docs/architecture/repository-layout.md).
-# QUALITY_GATES: optional = gate não configurado em app/pom.xml é SKIP; required = FAIL.
-#   Para ativar, veja docs/how-to/enable-quality-gates.md.
-# REPOSITORY_ROLE: project exige APP_DIR=app (verificado por scripts/agents/check-config.sh).
-APP_DIR=${DEST_APP}
-QUALITY_GATES=${gates}
-REPOSITORY_ROLE=project
-EOF
-
-if [[ -e "${DEST}/README.md" ]]; then
-  # O README do destino é mantido; a verificação abaixo usa o estado final real.
-  cp -p "${DEST}/README.md" "${STAGE}/README.md"
-elif [[ ! -e "${STAGE}/README.md" ]]; then
-  write_project_readme "${STAGE}/README.md" "${name}"
-fi
-
-# 9. Fora do seed, o kit só pode conter configuração: nenhum arquivo sob app/, infra/, tests/
-#    ou .github/.
-if (( ! seed )); then
-  forbidden="$(cd "${STAGE}" && find "${DEST_APP}" infra tests .github -type f 2>/dev/null | head -n 5 || true)"
-  if [[ -n "${forbidden}" ]]; then
-    printf '%s\n' "${forbidden}" >&2
-    echo "[FAIL] O kit só de configuração não pode gravar em ${DEST_APP}/, infra/, tests/ ou .github/." >&2
-    exit 1
-  fi
-fi
-
-# 10. Stubs do Claude Code e verificação do kit antes de tocar o destino. O diretório do app
-#     existe na área temporária só para a validação do .harness (diretórios vazios não são copiados).
-bash "${STAGE}/scripts/agents/sync-skills.sh" >/dev/null
-mkdir -p "${STAGE}/${DEST_APP}"
-if ! check_output="$(cd "${STAGE}" && bash scripts/agents/check-config.sh 2>&1)"; then
-  printf '%s\n' "${check_output}" >&2
-  echo "[FAIL] O kit gerado não passou em agents/check-config.sh; destino não alterado." >&2
-  exit 1
-fi
-
-# 11. Cópia para o destino sem sobrescrever: conflitos viram <arquivo>.kit.
 mkdir -p "${DEST}"
-conflicts=() copied=0
-while IFS= read -r -d '' file; do
-  rel="${file#"${STAGE}"/}"
-  target="${DEST}/${rel}"
-  mkdir -p "$(dirname -- "${target}")"
-  if [[ -e "${target}" ]]; then
-    if ! cmp -s "${file}" "${target}"; then
-      cp -p "${file}" "${target}.kit"
-      conflicts+=("${rel}")
-    fi
-  else
-    cp -p "${file}" "${target}"
-    copied=$((copied + 1))
-  fi
-done < <(find "${STAGE}" -type f -print0)
-
-echo "[PASS] Kit exportado para ${DEST}: ${copied} arquivo(s) novo(s); check-config aprovado no kit."
-if (( ${#conflicts[@]} > 0 )); then
-  echo "[AVISO] ${#conflicts[@]} arquivo(s) já existiam; a versão do kit está em <arquivo>.kit para mesclar:"
-  printf '  - %s\n' "${conflicts[@]}"
-fi
-if (( seed )); then
-  echo "[INFO] Seed gerado. Antes de publicar: git init, bash scripts/git/install-hooks.sh e bash scripts/verify.sh no destino."
-  echo "[INFO] Projetos criados a partir dele começam por: bash scripts/agents/init-project.sh (ver README.md do seed)."
-  exit 0
-fi
-echo "[INFO] Projeto em ${DEST_APP}/: $( [[ -f "${DEST}/${DEST_APP}/pom.xml" ]] && echo "pom.xml encontrado" || echo "pom.xml AUSENTE (o harness exige ${DEST_APP}/pom.xml)" ); classe ${detected_main:-não detectada} em ${detected_package:-pacote não detectado}; Java ${java_version:-?}; Spring Boot ${boot_version:-?}."
-echo "[INFO] Nada foi gravado em ${DEST_APP}/, infra/, tests/ nem .github/ (gerido por DevOps)."
-echo "[INFO] Próximos passos no projeto (seções prontas; só os campos [PREENCHER-...] ficam para preencher):"
-[[ -n "${detected_package}" ]] || echo "  - Pacote base não detectado; os textos usam ${new_package}: ajuste skills e docs."
-echo "  - Negócio: docs/product/prd.md (bash scripts/product/check-prd.sh), propósito no AGENTS.md §1 e visão geral no README.md."
-echo "  - Engenharia: seção \"Revisão neste projeto\" dos ADRs 0001 a 0003, AGENTS.md §2 (persistência) e licença."
-echo "  - Quality gates: blocos prontos no fim de docs/how-to/enable-quality-gates.md; depois QUALITY_GATES=required no .harness."
-echo "  - Harness: git init (se preciso), bash scripts/git/install-hooks.sh e bash scripts/verify.sh."
-pending="$( (cd "${DEST}" && bash scripts/agents/list-pending.sh) | grep -E '^  [^ ]' || true)"
-[[ -z "${pending}" ]] || { echo "  - Campos por responsável (lista completa: bash scripts/agents/list-pending.sh):"; sed 's/^/  /' <<<"${pending}"; }
+cp -R "${KIT}/." "${DEST}/"
+echo "[PASS] Seed (instalador) gravado em ${DEST}; instalação verificada num projeto de exemplo."
+echo "[INFO] Uso: bash ${DEST}/install.sh <diretório do projeto>"
