@@ -214,7 +214,7 @@
 							<append>false</append>
 						</configuration>
 					</execution>
-					<!-- Merge, relatório e check: somente por execução explícita (scripts/test-coverage.sh). -->
+					<!-- Merge, relatório e check: somente por execução explícita (scripts/quality/coverage.sh). -->
 					<execution>
 						<id>coverage-merge</id>
 						<phase>none</phase>
@@ -277,7 +277,7 @@
 					</execution>
 				</executions>
 			</plugin>
-			<!-- PIT: somente por execução explícita (scripts/test-mutation.sh). -->
+			<!-- PIT: somente por execução explícita (scripts/quality/mutation.sh). -->
 			<plugin>
 				<groupId>org.pitest</groupId>
 				<artifactId>pitest-maven</artifactId>

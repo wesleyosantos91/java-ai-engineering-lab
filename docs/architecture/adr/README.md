@@ -10,6 +10,7 @@ Registro versionado das decisões arquiteturais do Java AI Engineering Lab. Cada
 | [0002](0002-multi-provider-agent-context.md) | Contexto de agentes multi-provider | Proposta | 2026-11-20 |
 | [0003](0003-test-suites-and-quality-gates.md) | Suítes de teste e quality gates | Proposta | 2026-11-20 |
 | [0004](0004-ai-first-reference-repository.md) | Repositório de referência AI-First | Proposta | 2026-11-20 <!-- kit:omit-line --> |
+| [0005](0005-public-seed-repository.md) | Seed público e kit só de configuração | Proposta | 2026-11-21 <!-- kit:omit-line --> |
 
 ## Quando registrar um ADR
 

@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
-# Compartilhado pelas duas suítes; não deve ser executado diretamente.
+# Compartilhado pelas suítes; não deve ser executado diretamente. Exige lib/app.sh carregado.
+source "$(dirname -- "${BASH_SOURCE[0]}")/pom.sh"
 # Retornos: 0 = PASS, 3 = SKIP (ausência ou testes ignorados), 1 = FAIL.
 run_test_suite() {
   local suite="$1" pattern="$2" reports="$3"
   shift 3
-  local report_dir="${ROOT_DIR}/target/${reports}" counts total failures errors skipped
+  local report_dir="${APP_ROOT}/target/${reports}" counts total failures errors skipped
 
-  [[ -f "${ROOT_DIR}/pom.xml" && -f "${ROOT_DIR}/mvnw" ]] || {
-    echo "[FAIL] pom.xml ou Maven Wrapper não encontrado." >&2; return 1;
-  }
+  require_maven_project || return 1
 
   # Somente relatórios gerados desta suíte; não reaproveitar evidência anterior.
   if [[ -d "${report_dir}" ]]; then
@@ -17,11 +16,17 @@ run_test_suite() {
 
   # TEST_SUITE_EXCLUDE (opcional): padrão de nome removido da elegibilidade, como os testes ArchUnit
   # excluídos da execução default do Surefire.
-  if [[ ! -d "${ROOT_DIR}/src/test/java" ]] ||
-     ! find "${ROOT_DIR}/src/test/java" -type f -name "${pattern}" \
+  if [[ ! -d "${APP_ROOT}/src/test/java" ]] ||
+     ! find "${APP_ROOT}/src/test/java" -type f -name "${pattern}" \
        ! -name "${TEST_SUITE_EXCLUDE:-}" -print -quit | grep -q .; then
     echo "[SKIP] ${suite}: não existem classes ${pattern}."
     return 3
+  fi
+
+  # TEST_SUITE_REQUIRES (opcional): texto que o pom precisa conter para a suíte existir (por
+  # exemplo, a execução Surefire dedicada). Ausente: gate não configurado (lib/app.sh).
+  if [[ -n "${TEST_SUITE_REQUIRES:-}" ]] && ! pom_has "${TEST_SUITE_REQUIRES}"; then
+    ( gate_not_configured "${suite}" "${TEST_SUITE_REQUIRES}" ) || return $?
   fi
 
   if [[ "${suite}" == "Integração" ]]; then
@@ -30,7 +35,7 @@ run_test_suite() {
     }
   fi
 
-  cd "${ROOT_DIR}"
+  cd "${APP_ROOT}"
   echo "[INFO] ${suite}: executando ${pattern}..."
   if ! bash ./mvnw --batch-mode --no-transfer-progress "$@"; then
     echo "[FAIL] ${suite}: Maven falhou. Relatórios: ${report_dir}" >&2

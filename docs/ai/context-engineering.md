@@ -48,6 +48,8 @@ Os arquivos de provider **reforçam** as regras do `AGENTS.md`, sem substituí-l
 
 Arquivos locais e pessoais, fora do versionamento: `CLAUDE.local.md`, `AGENTS.local.md` e `.claude/settings.local.json`.
 
+Proteção de `.github/` (gerido por DevOps; AGENTS.md, seção 8): o Claude Code a aplica com `deny` de `Edit`/`Write` em `.github/**`, verificado pelo `check-config.sh`. As regras do Codex (`execpolicy`) controlam comandos, não caminhos de arquivo, e o Devin não tem adaptador: nos dois vale a regra do AGENTS.md e o item bloqueante da skill `code-review`. Não há bloqueio no Git, porque o time de DevOps faz commits nesse diretório.
+
 ## Agentes em nuvem e ambiente reproduzível
 
 Agentes que executam em nuvem (Codex cloud, Devin, sessões remotas) e Codespaces precisam do mesmo ambiente que o harness assume. O [`.devcontainer/devcontainer.json`](../../.devcontainer/devcontainer.json) fornece Java 27 (Temurin), Docker (docker-in-docker, para Testcontainers) e GitHub CLI, com versões de imagem e features fixadas. Após a criação, ele executa `scripts/setup.sh` e instala os hooks Git. Para providers que configuram o ambiente fora do repositório, use os mesmos passos: Java 27, Docker, `bash scripts/setup.sh` e `bash scripts/git/install-hooks.sh`.

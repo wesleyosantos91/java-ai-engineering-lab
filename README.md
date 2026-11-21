@@ -154,14 +154,14 @@ Princípios que valem para qualquer agente:
 ├── SECURITY.md                # política e reporte de vulnerabilidades
 ├── docs/
 │   ├── product/               # PRD
-│   ├── architecture/          # ADRs (índice e template), packages e regras de dependência
+│   ├── architecture/          # ADRs (índice e template), layout, packages e regras de dependência
 │   ├── engineering/           # Definition of Done
 │   ├── features/              # catálogo e template de especificação
 │   ├── how-to/                # guias operacionais
 │   └── ai/                    # context engineering e aprendizados registrados
-├── performance/k6/            # cenários k6 (smoke de disponibilidade)
 ├── scripts/                   # harness local
-└── src/                       # código e testes Java
+├── src/                       # código e testes Java (APP_DIR=. no .harness; em projetos, app/)
+└── tests/performance/k6/      # cenários k6 (smoke de disponibilidade)
 ```
 
 ## Documentação

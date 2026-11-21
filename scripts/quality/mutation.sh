@@ -6,16 +6,17 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 ROOT_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd -P)"
-REPORT_DIR="${ROOT_DIR}/target/pit-reports"
+source "${SCRIPT_DIR}/../lib/app.sh" || exit 1
+REPORT_DIR="${APP_ROOT}/target/pit-reports"
 
-[[ -f "${ROOT_DIR}/pom.xml" && -f "${ROOT_DIR}/mvnw" ]] || {
-  echo "[FAIL] pom.xml ou Maven Wrapper não encontrado." >&2; exit 1;
-}
+require_maven_project || exit 1
 
 source "${SCRIPT_DIR}/../lib/pom.sh"
+pom_has 'pitest-maven' && pom_has '<app.basePath>' ||
+  gate_not_configured Mutação 'PIT (pitest-maven e propriedade app.basePath)'
 # Mesmo pacote base de targetClasses no pitest-maven (app.basePath).
 BASE_PATH="$(pom_property app.basePath)" || exit 1
-FEATURE_DIR="${ROOT_DIR}/src/main/java/${BASE_PATH}/feature"
+FEATURE_DIR="${APP_ROOT}/src/main/java/${BASE_PATH}/feature"
 
 # Mesmo escopo de targetClasses do pitest-maven: feature/*/domain e feature/*/service.
 if [[ ! -d "${FEATURE_DIR}" ]] ||
@@ -26,7 +27,7 @@ if [[ ! -d "${FEATURE_DIR}" ]] ||
 fi
 
 rm -rf "${REPORT_DIR}"
-cd "${ROOT_DIR}"
+cd "${APP_ROOT}"
 echo "[INFO] Mutação: executando PIT; meta mutation score >= 90%."
 code=0
 bash ./mvnw --batch-mode --no-transfer-progress \
@@ -42,7 +43,7 @@ detected="$(count "<mutation [^>]*detected=['\"]true['\"]")"
 survived="$(count "status=['\"]SURVIVED['\"]")"
 no_coverage="$(count "status=['\"]NO_COVERAGE['\"]")"
 echo "[INFO] Mutação: mutantes=${total}, detectados=${detected}, sobreviventes=${survived}, sem cobertura=${no_coverage}."
-echo "[INFO] Relatórios: target/pit-reports/index.html e target/pit-reports/mutations.xml"
+echo "[INFO] Relatórios: ${APP_PREFIX}target/pit-reports/index.html e target/pit-reports/mutations.xml"
 
 if (( code != 0 )); then
   echo "[FAIL] Mutação: PIT rejeitou o threshold ou Maven falhou." >&2

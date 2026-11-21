@@ -4,10 +4,13 @@
 # Retorna 1, com mensagem, se a propriedade não existir: o harness não adivinha o pacote base.
 pom_property() {
   local name="$1" value
-  value="$(sed -n "s#.*<${name}>\([^<]*\)</${name}>.*#\1#p" "${ROOT_DIR}/pom.xml" | head -n 1)"
+  value="$(sed -n "s#.*<${name}>\([^<]*\)</${name}>.*#\1#p" "${APP_ROOT:-${ROOT_DIR}}/pom.xml" | head -n 1)"
   if [[ -z "${value}" ]]; then
-    echo "[FAIL] Propriedade <${name}> ausente no pom.xml; defina app.basePackage, app.basePath e app.mainClass." >&2
+    echo "[FAIL] Propriedade <${name}> ausente em ${APP_PREFIX:-}pom.xml; defina app.basePackage, app.basePath e app.mainClass." >&2
     return 1
   fi
   printf '%s\n' "${value}"
 }
+
+# Indica se o pom do app contém o texto literal (por exemplo, o id de uma execução de plugin).
+pom_has() { grep -qF -- "$1" "${APP_ROOT:-${ROOT_DIR}}/pom.xml"; }

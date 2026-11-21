@@ -6,18 +6,19 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 ROOT_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd -P)"
-TARGET="${ROOT_DIR}/target"
+source "${SCRIPT_DIR}/../lib/app.sh" || exit 1
+TARGET="${APP_ROOT}/target"
 REPORT="${TARGET}/site/jacoco/jacoco.xml"
 
-[[ -f "${ROOT_DIR}/pom.xml" && -f "${ROOT_DIR}/mvnw" ]] || {
-  echo "[FAIL] pom.xml ou Maven Wrapper não encontrado." >&2; exit 1;
-}
+require_maven_project || exit 1
 
 source "${SCRIPT_DIR}/../lib/pom.sh"
+pom_has '<id>coverage-check</id>' && pom_has '<app.mainClass>' ||
+  gate_not_configured Cobertura 'JaCoCo (execução coverage-check e propriedade app.mainClass)'
 # Mesma exclusão declarada no jacoco-maven-plugin (bootstrap sem regra de negócio, app.mainClass).
 MAIN_CLASS="$(pom_property app.mainClass)" || exit 1
-if [[ ! -d "${ROOT_DIR}/src/main/java" ]] ||
-   ! find "${ROOT_DIR}/src/main/java" -type f -name '*.java' \
+if [[ ! -d "${APP_ROOT}/src/main/java" ]] ||
+   ! find "${APP_ROOT}/src/main/java" -type f -name '*.java' \
      ! -name 'package-info.java' ! -name "${MAIN_CLASS}.java" -print -quit | grep -q .; then
   echo "[SKIP] Cobertura: não existe código elegível em src/main/java."
   exit 3
@@ -36,7 +37,7 @@ fi
 # Não reaproveitar evidência anterior.
 rm -f "${TARGET}/jacoco-merged.exec" "${REPORT}"
 
-cd "${ROOT_DIR}"
+cd "${APP_ROOT}"
 echo "[INFO] Cobertura: dados ${exec_files[*]}; metas LINE >= 90% e BRANCH >= 90%."
 code=0
 bash ./mvnw --batch-mode --no-transfer-progress \
@@ -57,7 +58,7 @@ line_total=$(( ${line_missed:-0} + ${line_covered:-0} ))
 branch_total=$(( ${branch_missed:-0} + ${branch_covered:-0} ))
 percent() { (( $2 == 0 )) && echo "n/a" || awk -v c="$1" -v t="$2" 'BEGIN { printf "%.2f%%", 100 * c / t }'; }
 echo "[INFO] Cobertura: LINE=$(percent "${line_covered:-0}" "${line_total}") (${line_covered:-0}/${line_total}); BRANCH=$(percent "${branch_covered:-0}" "${branch_total}") (${branch_covered:-0}/${branch_total})."
-echo "[INFO] Relatórios: target/site/jacoco/index.html e target/site/jacoco/jacoco.xml"
+echo "[INFO] Relatórios: ${APP_PREFIX}target/site/jacoco/index.html e target/site/jacoco/jacoco.xml"
 
 if (( code != 0 )); then
   echo "[FAIL] Cobertura: jacoco:check rejeitou os limites ou Maven falhou." >&2

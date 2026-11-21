@@ -30,7 +30,7 @@ git diff --check
 
 - Confira a [Definition of Done](docs/engineering/definition-of-done.md). `SKIP`, `NOT RUN` e resultado PARCIAL não são aprovação.
 - Commits em [Conventional Commits](https://www.conventionalcommits.org/), em inglês, no imperativo e sem ponto final, por exemplo `feat(product): add product creation endpoint`. Não inclua `Co-Authored-By` nem outra atribuição de coautoria. Os hooks aplicam essas regras a cada commit; não use `--no-verify`. Detalhes na skill [git-delivery](.agents/skills/git-delivery/SKILL.md).
-- Abra o PR contra `develop` e preencha o [template](.github/pull_request_template.md) com as verificações realmente executadas.
+- Abra o PR contra `develop` e preencha o [template](.github/pull_request_template.md) com as verificações realmente executadas. <!-- kit:replace-line: - Abra o PR contra `develop` e preencha o template de PR do repositório (mantido pelo time de DevOps em `.github/`) com as verificações realmente executadas. -->
 
 ## Segurança
 
@@ -38,7 +38,7 @@ Vulnerabilidades são reportadas de forma privada, conforme o [SECURITY.md](SECU
 
 ## Licença
 
-Ao contribuir, você concorda que sua contribuição seja licenciada sob a [Apache License 2.0](LICENSE), conforme a seção 5 da licença. <!-- kit:replace-line: [PREENCHER: licença do projeto e termos das contribuições]. -->
+Ao contribuir, você concorda que sua contribuição seja licenciada sob a [Apache License 2.0](LICENSE), conforme a seção 5 da licença. <!-- kit:replace-line: [PREENCHER-ENGENHARIA: licença do projeto e termos das contribuições]. -->
 
 ## Revisão humana
 
