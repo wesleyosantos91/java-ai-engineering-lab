@@ -1,0 +1,27 @@
+# Regras de comando do Codex (execpolicy, Starlark). Reforçam o AGENTS.md, seções 8 e 9:
+# commit, push, merge e rebase exigem autorização; force-push é proibido.
+# Verifique com: codex execpolicy check --pretty --rules .codex/rules/delivery.rules -- git push
+
+prefix_rule(
+    pattern = ["git", "push", ["--force", "-f", "--force-with-lease"]],
+    decision = "forbidden",
+    justification = "Force-push é proibido sem autorização explícita (AGENTS.md, seção 8).",
+    match = ["git push --force", "git push -f origin feature/x"],
+    not_match = ["git push origin feature/x"],
+)
+
+prefix_rule(
+    pattern = ["git", ["commit", "push", "merge", "rebase"]],
+    decision = "prompt",
+    justification = "Commit, push, merge e rebase exigem autorização explícita; execute antes bash scripts/git/guard-branch.sh (AGENTS.md, seção 9).",
+    match = ["git commit -m 'docs: x'", "git push origin feature/x", "git merge develop", "git rebase develop"],
+    not_match = ["git status", "git diff"],
+)
+
+prefix_rule(
+    pattern = ["git", "reset", "--hard"],
+    decision = "prompt",
+    justification = "Comando destrutivo; exige autorização explícita (AGENTS.md, seção 8).",
+    match = ["git reset --hard HEAD~1"],
+    not_match = ["git reset --soft HEAD~1"],
+)

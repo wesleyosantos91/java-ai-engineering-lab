@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Hook commit-msg: valida a mensagem conforme o AGENTS.md, seção 9. Instale com
+# bash scripts/git/install-hooks.sh. Vale para qualquer agente ou pessoa que use o Git.
+set -Eeuo pipefail
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+exec bash "${ROOT_DIR}/scripts/git/check-commit-msg.sh" "$1"

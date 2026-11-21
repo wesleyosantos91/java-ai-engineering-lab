@@ -67,9 +67,26 @@ run_test_suite() {
     echo "[FAIL] ${suite}: nenhum teste executado ou falhas nos relatórios." >&2
     return 1
   fi
-  if (( skipped > 0 )); then
-    echo "[SKIP] ${suite}: execução incompleta; consulte ${report_dir}."
+  # TEST_SUITE_NA_MARKER (opcional): testes ignorados por premissa com esse marcador não são
+  # aplicáveis (por exemplo, regra ArchUnit sem classes elegíveis) e não contam como SKIP.
+  # Ainda assim, pelo menos um teste precisa ter executado para haver PASS.
+  local not_applicable=0
+  if [[ -n "${TEST_SUITE_NA_MARKER:-}" ]]; then
+    not_applicable="$(cat "${report_dir}"/TEST-*.xml | { grep -oF "Assumption failed: ${TEST_SUITE_NA_MARKER}" || true; } | wc -l | tr -d " ")"
+    (( not_applicable <= skipped )) || not_applicable="${skipped}"
+  fi
+  local executed=$((total - skipped)) incomplete=$((skipped - not_applicable))
+  if (( incomplete > 0 )); then
+    echo "[SKIP] ${suite}: execução incompleta (${incomplete} ignorado(s), N/A=${not_applicable}); consulte ${report_dir}."
     return 3
   fi
-  echo "[PASS] ${suite}: $((total - skipped)) teste(s)."
+  if (( executed == 0 )); then
+    echo "[SKIP] ${suite}: nenhum teste aplicável executado (N/A=${not_applicable}); consulte ${report_dir}."
+    return 3
+  fi
+  if (( not_applicable > 0 )); then
+    echo "[PASS] ${suite}: ${executed} teste(s); ${not_applicable} não aplicável(is) (N/A), listado(s) em ${report_dir}."
+  else
+    echo "[PASS] ${suite}: ${executed} teste(s)."
+  fi
 }

@@ -1,0 +1,29 @@
+# Convenções de edição compartilhadas por IDEs e agentes. Segue o estilo já existente:
+# Java e XML com tabs (padrão do Spring Initializr); YAML, JSON e Markdown com 2 espaços.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{java,xml}]
+indent_style = tab
+
+[*.{sh,toml,rules}]
+indent_style = space
+indent_size = 2
+
+[*.{yaml,yml,json}]
+indent_style = space
+indent_size = 2
+
+[*.md]
+indent_style = space
+indent_size = 2
+# Duas quebras finais de linha são significativas em Markdown.
+trim_trailing_whitespace = false
+
+[*.cmd]
+end_of_line = crlf
