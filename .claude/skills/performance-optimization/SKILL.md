@@ -1,7 +1,7 @@
 ---
 name: performance-optimization
 description: >-
-  Conduz investigação e otimização de desempenho do Java AI Engineering Lab com medição
+  Conduz investigação e otimização de desempenho deste repositório com medição
   antes e depois, protocolo reproduzível e análise de trade-offs de latência,
   throughput, CPU e memória. Use quando houver problema de desempenho, mudança com
   impacto relevante ou novo cenário de carga. Não use para otimizar sem medição

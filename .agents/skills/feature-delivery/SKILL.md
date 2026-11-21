@@ -1,7 +1,7 @@
 ---
 name: feature-delivery
 description: >-
-  Orienta o ciclo de entrega funcional do Java AI Engineering Lab, do contrato e da
+  Orienta o ciclo de entrega funcional deste repositório, do contrato e da
   autorização às evidências e à revisão humana. Use para criar uma nova feature,
   evoluir uma funcionalidade existente, implementar um requisito do PRD, corrigir
   comportamento de uma feature, planejar e executar uma entrega funcional ou

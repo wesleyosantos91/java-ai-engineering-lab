@@ -42,7 +42,7 @@ Este ADR registra retroativamente decisões já implementadas. Ele não introduz
 
 ### Fronteira `api → service`
 
-Dentro de uma feature, `api` depende somente de `service`, nunca de `domain` (decisão do responsável em 2026-11-20, aplicada na FEAT-0001). A regra ArchUnit `apiDoesNotDependOnDomain` a protege, e `harness-tests/quality-gates.sh` prova que uma violação é rejeitada.
+Dentro de uma feature, `api` depende somente de `service`, nunca de `domain` (decisão do responsável em 2026-11-20, aplicada na FEAT-0001). A regra ArchUnit `apiDoesNotDependOnDomain` a protege, e `harness-tests/quality-gates.sh` prova que uma violação é rejeitada. <!-- kit:replace-line: Dentro de uma feature, `api` depende somente de `service`, nunca de `domain`. A regra ArchUnit `apiDoesNotDependOnDomain` a protege, e `harness-tests/quality-gates.sh` prova que uma violação é rejeitada. -->
 
 ## Alternativas consideradas
 

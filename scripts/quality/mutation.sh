@@ -7,11 +7,15 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 ROOT_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd -P)"
 REPORT_DIR="${ROOT_DIR}/target/pit-reports"
-FEATURE_DIR="${ROOT_DIR}/src/main/java/io/github/wesleyosantos91/catalog/feature"
 
 [[ -f "${ROOT_DIR}/pom.xml" && -f "${ROOT_DIR}/mvnw" ]] || {
   echo "[FAIL] pom.xml ou Maven Wrapper não encontrado." >&2; exit 1;
 }
+
+source "${SCRIPT_DIR}/../lib/pom.sh"
+# Mesmo pacote base de targetClasses no pitest-maven (app.basePath).
+BASE_PATH="$(pom_property app.basePath)" || exit 1
+FEATURE_DIR="${ROOT_DIR}/src/main/java/${BASE_PATH}/feature"
 
 # Mesmo escopo de targetClasses do pitest-maven: feature/*/domain e feature/*/service.
 if [[ ! -d "${FEATURE_DIR}" ]] ||

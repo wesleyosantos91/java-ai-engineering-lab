@@ -19,6 +19,7 @@ Entradas não são reescritas. Se um aprendizado se mostrar errado, mude o statu
 
 ## Entradas
 
+<!-- kit:omit-start -->
 ### LL-0001 — Claude Code não descobre `.agents/skills/`
 
 - **Data:** 2026-11-20
@@ -153,3 +154,4 @@ Entradas não são reescritas. Se um aprendizado se mostrar errado, mude o statu
 - **Aprendizado:** uma verificação de "arquivo ignorado por engano" precisa de uma lista explícita de exceções para os arquivos locais que o próprio projeto declara (`local_files` no check). Teste os dois lados: o arquivo pessoal passa e um script novo ignorado continua sendo detectado.
 - **Destino:** `scripts/agents/check-config.sh` e caso em `scripts/harness-tests/agent-config.sh`
 - **Status:** Incorporada
+<!-- kit:omit-end -->

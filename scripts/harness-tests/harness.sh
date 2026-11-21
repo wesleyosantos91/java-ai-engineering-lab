@@ -7,7 +7,14 @@ mkdir -p "${ROOT_DIR}/target"
 FIXTURE="$(mktemp -d "${ROOT_DIR}/target/harness-check.XXXXXX")/fixture with spaces"
 mkdir -p "${FIXTURE}/bin" "${FIXTURE}/src/test/java"
 cp -R "${ROOT_DIR}/scripts" "${FIXTURE}/scripts"
-touch "${FIXTURE}/pom.xml"
+# pom.xml mínimo: só as propriedades de pacote que os scripts de qualidade leem (lib/pom.sh).
+cat > "${FIXTURE}/pom.xml" <<'XML'
+<project><properties>
+<app.basePackage>io.github.wesleyosantos91.catalog</app.basePackage>
+<app.basePath>io/github/wesleyosantos91/catalog</app.basePath>
+<app.mainClass>JavaAiEngineeringLabApplication</app.mainClass>
+</properties></project>
+XML
 # O check de configuração de agentes tem teste próprio (harness-tests/agent-config.sh); aqui é simulado.
 cat > "${FIXTURE}/scripts/agents/check-config.sh" <<'BASH'
 #!/usr/bin/env bash
@@ -65,7 +72,7 @@ BASH
 check() {
   local expected="$1" message="$2" script="$3" code=0 vars=() args=()
   shift 3
-  # VAR=valor vão para o env; argumentos do script vêm depois de "--" (ver LL-0003).
+  # VAR=valor vão para o env; argumentos do script vêm depois de "--" (env "$@" leria opções do script).
   while (( $# )); do
     if [[ "$1" == -- ]]; then shift; args=("$@"); break; fi
     vars+=("$1"); shift
@@ -156,6 +163,12 @@ check 1 'jacoco:check rejeitou' quality/coverage.sh MOCK_COVERAGE_EXIT=1
 check 0 '[PASS] Mutação' quality/mutation.sh
 check 3 'nenhum mutante gerado' quality/mutation.sh MOCK_MUTANTS=none
 check 1 'PIT rejeitou o threshold' quality/mutation.sh MOCK_PIT_EXIT=1
+# Sem as propriedades app.* no pom.xml, os gates falham explicitamente em vez de adivinhar o pacote.
+cp "${FIXTURE}/pom.xml" "${FIXTURE}/pom.xml.bak"
+echo '<project/>' > "${FIXTURE}/pom.xml"
+check 1 'Propriedade <app.basePath> ausente' quality/mutation.sh
+check 1 'Propriedade <app.mainClass> ausente' quality/coverage.sh
+mv "${FIXTURE}/pom.xml.bak" "${FIXTURE}/pom.xml"
 # Performance: smoke k6 com k6 e curl simulados; a aplicação real não é necessária.
 mkdir -p "${FIXTURE}/performance/k6"
 touch "${FIXTURE}/performance/k6/smoke.js"

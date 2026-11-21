@@ -137,6 +137,27 @@ if (( ${#docs[@]} > 0 )); then
 fi
 (( link_failures > 0 )) || pass "Links relativos Markdown resolvíveis em ${#docs[@]} arquivo(s)."
 
+# 6b. Marcadores do kit de adoção (scripts/agents/export-kit.sh): só os tipos conhecidos e
+# blocos omit-start/omit-end balanceados, sem aninhamento.
+marker_failures=0
+if (( ${#docs[@]} > 0 )); then
+  while IFS= read -r problem; do
+    fail "Marcador do kit inválido: ${problem}"
+    marker_failures=$((marker_failures + 1))
+  done < <(awk '
+    FNR == 1 { if (prev != "" && open) printf "%s: omit-start sem omit-end\n", prev; open = 0 }
+    { prev = FILENAME; line = $0
+      while (match(line, /<!-- kit:[a-z-]+/)) {
+        kind = substr(line, RSTART + 9, RLENGTH - 9)
+        if (kind == "omit-start") { if (open) printf "%s:%d: omit-start aninhado\n", FILENAME, FNR; open = 1 }
+        else if (kind == "omit-end") { if (!open) printf "%s:%d: omit-end sem omit-start\n", FILENAME, FNR; open = 0 }
+        else if (kind != "omit-line" && kind != "replace-line") printf "%s:%d: tipo desconhecido kit:%s\n", FILENAME, FNR, kind
+        line = substr(line, RSTART + RLENGTH)
+      } }
+    END { if (open) printf "%s: omit-start sem omit-end\n", prev }' "${docs[@]}")
+fi
+(( marker_failures > 0 )) || pass "Marcadores do kit válidos."
+
 # 7. Caminhos scripts/*.sh citados em documentação e configuração existem. O registro de
 # aprendizados é histórico imutável e preserva os caminhos da época; fica fora.
 path_failures=0

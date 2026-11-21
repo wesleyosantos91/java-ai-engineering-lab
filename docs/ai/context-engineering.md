@@ -38,7 +38,7 @@ DoD (pronto) ──►  harness (scripts/) ──►  evidências no relatório
 
 | Provider | Instruções | Skills | Limites de autonomia versionados |
 |---|---|---|---|
-| Codex | `AGENTS.md` (raiz e diretórios no caminho) | `.agents/skills/` | `.codex/config.toml` (sandbox `workspace-write`, aprovação `on-request`) e `.codex/rules/delivery.rules` (commit, push, merge e rebase pedem aprovação; force-push é proibido). Carregados só se o projeto estiver marcado como confiável; valide as regras com `codex execpolicy check --rules .codex/rules/delivery.rules -- <comando>` ([LL-0004](lessons-learned.md#ll-0004--configuração-e-regras-do-codex-só-valem-em-projeto-confiável)). |
+| Codex | `AGENTS.md` (raiz e diretórios no caminho) | `.agents/skills/` | `.codex/config.toml` (sandbox `workspace-write`, aprovação `on-request`) e `.codex/rules/delivery.rules` (commit, push, merge e rebase pedem aprovação; force-push é proibido). Carregados só se o projeto estiver marcado como confiável; valide as regras com `codex execpolicy check --rules .codex/rules/delivery.rules -- <comando>`. |
 | Claude Code | `CLAUDE.md`, que importa `@AGENTS.md` | `.claude/skills/`, com stubs gerados que apontam para `.agents/skills/` | `.claude/settings.json`: permissões allow/ask/deny e hook `PreToolUse` que aplica `scripts/git/guard-branch.sh` a `git commit` e `git push` |
 | Devin | `AGENTS.md` | `.agents/skills/` (local recomendado pelo Devin) | Nenhum arquivo versionado; vale o `AGENTS.md` |
 
@@ -81,6 +81,10 @@ Aplique a skill `lessons-learned`. Ela filtra o que é não óbvio e evidenciado
 
 1. Decida a camada. Se a regra vale para toda tarefa, vai para o `AGENTS.md`. Se é procedimento, vai para uma skill. Se é detalhe operacional, vai para `docs/how-to/`.
 2. Se o `AGENTS.md` estourar o limite, mova detalhes para a camada 2, em vez de aumentar o limite. Elevar o limite exige revisar o ADR-0002.
+
+**Levar a configuração para outro repositório** <!-- kit:omit-line -->
+
+Use `bash scripts/agents/export-kit.sh <destino>`, conforme o [guia de adoção](../how-to/adopt-in-new-repository.md). <!-- kit:omit-line -->
 
 **Adicionar um provider**
 

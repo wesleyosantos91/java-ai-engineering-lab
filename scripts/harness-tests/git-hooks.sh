@@ -9,8 +9,8 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 ROOT_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd -P)"
 mkdir -p "${ROOT_DIR}/target"
 WORK="$(mktemp -d "${ROOT_DIR}/target/git-hooks-check.XXXXXX")"
-# Objetos Git são somente leitura no Windows e impediriam o "mvn clean" de apagar target/
-# (LL-0010): o repositório temporário é removido ao sair, inclusive em falha.
+# Objetos Git são somente leitura no Windows e impediriam o "mvn clean" de apagar target/:
+# o repositório temporário é removido ao sair, inclusive em falha.
 cleanup() { chmod -R u+w "${WORK}" 2>/dev/null || true; rm -rf "${WORK}"; }
 trap cleanup EXIT
 CHECK="${ROOT_DIR}/scripts/git/check-commit-msg.sh"

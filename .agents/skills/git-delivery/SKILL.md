@@ -1,7 +1,7 @@
 ---
 name: git-delivery
 description: >-
-  Prepara commits e pull requests do Java AI Engineering Lab com branch correta,
+  Prepara commits e pull requests deste repositório com branch correta,
   verificação local, commits pequenos em Conventional Commits e descrição com
   evidências. Use somente quando o usuário autorizar commit, push ou abertura de PR.
   Não use para merge, rebase destrutivo ou force-push sem autorização explícita.

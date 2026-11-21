@@ -32,7 +32,7 @@ bash scripts/quality/mutation.sh     # explícito; fora do verify.sh
 
 As versões dos plugins são gerenciadas pelo parent Spring Boot 4.1.2. Não usar as convenções padrão alternativas `*Tests`, `Test*` ou `*ITCase` para novos testes: os includes do POM são explícitos. Classes auxiliares, como `TestcontainersConfiguration` e a aplicação de desenvolvimento `TestJavaAiEngineeringLabApplication`, não são testes executáveis.
 
-Unitários não devem usar `@SpringBootTest`, importar a configuração de contêineres nem depender de Docker. O teste de contexto foi renomeado para `JavaAiEngineeringLabApplicationIT`; ele inicializa PostgreSQL com `@ServiceConnection` e verifica `SHOW server_version` por JDBC. Os testes de produto da [FEAT-0001](../features/FEAT-0001-create-product/spec.md) são `*Test` em `feature/product/domain` e `feature/product/service` e `ProductCreationIT`/`ProductConcurrencyIT`, com HTTP real e PostgreSQL.
+Unitários não devem usar `@SpringBootTest`, importar a configuração de contêineres nem depender de Docker. O teste de contexto foi renomeado para `JavaAiEngineeringLabApplicationIT`; ele inicializa PostgreSQL com `@ServiceConnection` e verifica `SHOW server_version` por JDBC. Os testes de produto da [FEAT-0001](../features/FEAT-0001-create-product/spec.md) são `*Test` em `feature/product/domain` e `feature/product/service` e `ProductCreationIT`/`ProductConcurrencyIT`, com HTTP real e PostgreSQL. <!-- kit:replace-line: Unitários não devem usar `@SpringBootTest`, importar a configuração de contêineres nem depender de Docker. O teste de contexto (`*ApplicationIT`) inicializa PostgreSQL com `@ServiceConnection` e verifica `SHOW server_version` por JDBC. -->
 
 Comandos equivalentes ao Maven usado pelos scripts, quando houver classes elegíveis:
 
@@ -147,7 +147,7 @@ As regras estão em `src/test/java/io/github/wesleyosantos91/catalog/architectur
 | Packages internos de cada feature livres de ciclos | "Dependências cíclicas não são permitidas" | Feature com ao menos dois packages internos |
 | Feature não acessa a `persistence` de outra | Comunicação entre features | Duas features e alguma `persistence` |
 
-Uma regra sem classes elegíveis é ignorada com o marcador `[N/A]` na premissa e reportada como **não aplicável**: não conta como SKIP e aparece no resumo (`N/A=n`). A arquitetura é PASS quando nenhuma regra aplicável falha e ao menos uma executa; se todas forem N/A, é SKIP ([ADR-0003](../architecture/adr/0003-test-suites-and-quality-gates.md)). Com a FEAT-0001, 8 regras executam e passam. As 3 N/A dependem de duas features (ciclos entre features e acesso à `persistence` de outra) ou de código de mensageria (producers).
+Uma regra sem classes elegíveis é ignorada com o marcador `[N/A]` na premissa e reportada como **não aplicável**: não conta como SKIP e aparece no resumo (`N/A=n`). A arquitetura é PASS quando nenhuma regra aplicável falha e ao menos uma executa; se todas forem N/A, é SKIP ([ADR-0003](../architecture/adr/0003-test-suites-and-quality-gates.md)). Com a FEAT-0001, 8 regras executam e passam. As 3 N/A dependem de duas features (ciclos entre features e acesso à `persistence` de outra) ou de código de mensageria (producers). <!-- kit:replace-line: Uma regra sem classes elegíveis é ignorada com o marcador `[N/A]` na premissa e reportada como **não aplicável**: não conta como SKIP e aparece no resumo (`N/A=n`). A arquitetura é PASS quando nenhuma regra aplicável falha e ao menos uma executa; se todas forem N/A, é SKIP ([ADR-0003](../architecture/adr/0003-test-suites-and-quality-gates.md)). -->
 
 ### JaCoCo
 
@@ -194,7 +194,7 @@ BASE_URL=http://localhost:9090 DURATION=30s bash scripts/performance/smoke.sh
 
 O cenário `performance/k6/smoke.js` usa 1 VU e só thresholds de disponibilidade (`http_req_failed` = 0 e `checks` = 100%). Latências e vazão impressas pelo k6 são informativas: o [PRD](../product/prd.md) só admite metas de desempenho definidas por protocolo reproduzível. Cenários de load e stress serão criados com a primeira feature com endpoint ([skill performance-optimization](../../.agents/skills/performance-optimization/SKILL.md)).
 
-Encerre a aplicação com `Ctrl+C` no terminal em que ela foi iniciada. No Windows, matar apenas o processo `bash`/`mvnw` deixa a JVM filha escutando na porta 8080 ([LL-0006](../ai/lessons-learned.md#ll-0006--no-windows-encerrar-o-mvnw-não-encerra-a-jvm-da-aplicação)).
+Encerre a aplicação com `Ctrl+C` no terminal em que ela foi iniciada. No Windows, matar apenas o processo `bash`/`mvnw` deixa a JVM filha escutando na porta 8080 ([LL-0006](../ai/lessons-learned.md#ll-0006--no-windows-encerrar-o-mvnw-não-encerra-a-jvm-da-aplicação)). <!-- kit:replace-line: Encerre a aplicação com `Ctrl+C` no terminal em que ela foi iniciada. No Windows, matar apenas o processo `bash`/`mvnw` deixa a JVM filha escutando na porta 8080. -->
 
 ## Segredos e commits
 
@@ -209,7 +209,7 @@ A varredura usa o [gitleaks](https://github.com/gitleaks/gitleaks) local ou, na 
 
 ## Diagnóstico
 
-- **Docker indisponível:** execute `bash scripts/setup.sh`, ative Docker Desktop e repita integração. Não omita a etapa silenciosamente. No Windows, `docker` no PATH não garante daemon ativo: se `docker info` mostrar o cliente mas falhar em `npipe:////./pipe/dockerDesktopLinuxEngine`, o Docker Desktop está parado ([LL-0002](../ai/lessons-learned.md#ll-0002--docker-desktop-parado-aparece-como-fail-da-integração)).
+- **Docker indisponível:** execute `bash scripts/setup.sh`, ative Docker Desktop e repita integração. Não omita a etapa silenciosamente. No Windows, `docker` no PATH não garante daemon ativo: se `docker info` mostrar o cliente mas falhar em `npipe:////./pipe/dockerDesktopLinuxEngine`, o Docker Desktop está parado ([LL-0002](../ai/lessons-learned.md#ll-0002--docker-desktop-parado-aparece-como-fail-da-integração)). <!-- kit:replace-line: - **Docker indisponível:** execute `bash scripts/setup.sh`, ative Docker Desktop e repita integração. Não omita a etapa silenciosamente. No Windows, `docker` no PATH não garante daemon ativo: se `docker info` mostrar o cliente mas falhar em `npipe:////./pipe/dockerDesktopLinuxEngine`, o Docker Desktop está parado. -->
 - **Classe elegível sem testes:** confira os métodos JUnit e a convenção; Maven deve falhar, em vez de produzir falso PASS.
 - **HTTP 401 em resolução de metadados:** verifique repositórios e credenciais do ambiente Maven. Avisos foram observados nesta execução, mas não impediram os artefatos utilizados; não adicionar credenciais ao projeto.
 - **Cobertura FAIL sem dados:** execute `bash scripts/verify.sh`; `quality/coverage.sh` isolado depende dos `.exec` da execução atual.

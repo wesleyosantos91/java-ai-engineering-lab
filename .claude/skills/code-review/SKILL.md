@@ -1,7 +1,7 @@
 ---
 name: code-review
 description: >-
-  Revisa um diff, branch ou pull request do Java AI Engineering Lab quanto a correção,
+  Revisa um diff, branch ou pull request deste repositório quanto a correção,
   aderência ao contrato, arquitetura, testes, segurança e manutenibilidade, produzindo
   achados priorizados e verificáveis. Use ao revisar mudanças próprias antes da entrega
   ou mudanças de terceiros. Não use para implementar as correções sem autorização.

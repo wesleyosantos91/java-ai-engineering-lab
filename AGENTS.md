@@ -4,7 +4,8 @@ Fonte canônica de instruções para agentes de IA (Codex, Claude Code, Devin e 
 
 ## 1. Propósito
 
-Repositório de referência de como configurar um projeto Java AI-First com boas práticas: context engineering, harness engineering, PRD, ADRs e agentes multi-provider ([ADR-0004](docs/architecture/adr/0004-ai-first-reference-repository.md)). A Product Catalog API é a aplicação-exemplo. AI-First não significa autonomia irrestrita, ausência de revisão humana ou substituição dos testes.
+Repositório de referência de configuração Java AI-First ([ADR-0004](docs/architecture/adr/0004-ai-first-reference-repository.md)); a Product Catalog API é a aplicação-exemplo. <!-- kit:replace-line: [PREENCHER: propósito do projeto]. -->
+AI-First não significa autonomia irrestrita, ausência de revisão humana ou substituição dos testes.
 
 ## 2. Stack e decisões fundamentais
 
@@ -108,7 +109,7 @@ Prefira os scripts de `scripts/` a Maven avulso; use Bash (Git Bash no Windows).
 | `setup.sh`, `verify.sh` | Inspecionar ambiente; fluxo padrão (agentes, build, unitários, arquitetura, integração, cobertura) |
 | `build/`, `test/`, `quality/coverage.sh` | Etapas individuais do fluxo padrão |
 | `quality/mutation.sh`, `performance/smoke.sh` | PIT e smoke k6; explícitos, fora do `verify.sh` |
-| `agents/` | `check-config.sh`, `sync-skills.sh` (stubs `.claude/skills/`) e hooks |
+| `agents/` | `check-config.sh`, `sync-skills.sh` (stubs `.claude/skills/`), `export-kit.sh` e hooks |
 | `git/` | `guard-branch.sh`, `check-commit-msg.sh` e hooks (`install-hooks.sh`) |
 | `security/scan-secrets.sh` | gitleaks; explícito e no `pre-commit` |
 | `harness-tests/` | Testes do próprio harness |

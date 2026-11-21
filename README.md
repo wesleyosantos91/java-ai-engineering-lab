@@ -18,6 +18,7 @@ A aplicação-exemplo é uma **Product Catalog API** (CRUD de produtos com Postg
 | Histórico de decisões | [ADRs](docs/architecture/adr/README.md) |
 | Harness sem falso PASS e quality gates | [`scripts/`](scripts/), [guia de testes](docs/how-to/run-tests.md), [ADR-0003](docs/architecture/adr/0003-test-suites-and-quality-gates.md) |
 | Aprendizado contínuo versionado | [skill lessons-learned](.agents/skills/lessons-learned/SKILL.md), [registro](docs/ai/lessons-learned.md) |
+| Reaproveitamento em outros repositórios | [Guia de adoção](docs/how-to/adopt-in-new-repository.md) e `scripts/agents/export-kit.sh` |
 | Regras de commit aplicadas por hooks, não só por texto | `scripts/git/` (`check-commit-msg.sh`, `install-hooks.sh`), [CONTRIBUTING](CONTRIBUTING.md) |
 | Segurança e governança | [SECURITY.md](SECURITY.md), varredura de segredos (`scripts/security/`), [CODEOWNERS](.github/CODEOWNERS), templates de issue e PR |
 | Ambiente reproduzível para agentes em nuvem | [`.devcontainer/`](.devcontainer/devcontainer.json) (Java 27, Docker, gh) |
@@ -178,6 +179,7 @@ Princípios que valem para qualquer agente:
 **Engenharia**
 - [Definition of Done](docs/engineering/definition-of-done.md)
 - [Executar e diagnosticar testes](docs/how-to/run-tests.md)
+- [Aplicar esta configuração em um repositório novo](docs/how-to/adopt-in-new-repository.md)
 - [Como contribuir](CONTRIBUTING.md)
 
 **Agentes de IA**

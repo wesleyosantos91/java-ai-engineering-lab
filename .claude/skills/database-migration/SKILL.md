@@ -1,8 +1,7 @@
 ---
 name: database-migration
 description: >-
-  Cria e revisa migrações Flyway e SQL explícito com Spring JDBC para PostgreSQL no Java
-  AI Engineering Lab, cobrindo versionamento, restrições, índices, transações e testes
+  Cria e revisa migrações Flyway e SQL explícito com Spring JDBC para PostgreSQL neste repositório, cobrindo versionamento, restrições, índices, transações e testes
   com Testcontainers. Use ao alterar esquema, escrever repository ou consulta SQL. Não
   use para introduzir JPA ou alterar migrações já aplicadas.
 ---

@@ -1,9 +1,9 @@
 ---
 name: project-documentation
-description: Cria, revisa e mantém documentação técnica do Java AI Engineering Lab, incluindo README, tutoriais, guias operacionais, referências de API, ADRs e explicações arquiteturais. Use quando a tarefa envolver documentação ou mudanças de código, comportamento, configuração ou comandos que exijam documentação atualizada.
+description: Cria, revisa e mantém documentação técnica deste repositório, incluindo README, tutoriais, guias operacionais, referências de API, ADRs e explicações arquiteturais. Use quando a tarefa envolver documentação ou mudanças de código, comportamento, configuração ou comandos que exijam documentação atualizada.
 ---
 
-# Project Documentation — Java AI Engineering Lab
+# Project Documentation
 
 ## Objetivo
 

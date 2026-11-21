@@ -9,7 +9,7 @@
 
 ## Contexto
 
-O ADR-0001 determina manter instruções versionadas para agentes. O repositório precisa funcionar com Codex, Claude Code e Devin sob as mesmas regras, para que o comportamento dos agentes seja consistente e reproduzível independentemente do provider ([ADR-0004](0004-ai-first-reference-repository.md)).
+O ADR-0001 determina manter instruções versionadas para agentes. O repositório precisa funcionar com Codex, Claude Code e Devin sob as mesmas regras, para que o comportamento dos agentes seja consistente e reproduzível independentemente do provider ([ADR-0004](0004-ai-first-reference-repository.md)). <!-- kit:replace-line: O ADR-0001 determina manter instruções versionadas para agentes. O repositório precisa funcionar com Codex, Claude Code e Devin sob as mesmas regras, para que o comportamento dos agentes seja consistente e reproduzível independentemente do provider. -->
 
 Os providers descobrem contexto de formas diferentes (comportamento observado na documentação pública em 2026-11):
 
