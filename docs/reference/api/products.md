@@ -9,25 +9,26 @@ Contrato implementado de `/api/v1/products`. Fonte normativa: [PRD-001](../../pr
 
 ## Criar produto
 
-`POST /api/v1/products` com `Content-Type: application/json`.
+`POST /api/v1/products` com `Content-Type: application/json`. A resposta é `application/json` (ou `application/problem+json` em erros); um `Accept` incompatível, como `text/html`, recebe `406 Not Acceptable` **antes** de qualquer gravação.
 
 ### Corpo
 
 | Campo | Tipo | Obrigatório | Regras (após normalização) |
 |---|---|---|---|
-| `sku` | string | sim | Sem espaços externos e em maiúsculas; 3 a 32 caracteres `A-Z`, `0-9`, `-`, `_`; começa por letra ou número; único |
-| `name` | string | sim | Sem espaços externos; 3 a 120 caracteres |
-| `description` | string ou `null` | não | Ausente, `null`, vazia ou só com espaços → `null`; senão sem espaços externos e até 500 caracteres |
+| `sku` | **string** JSON | sim | Sem espaços externos e em maiúsculas; 3 a 32 caracteres `A-Z`, `0-9`, `-`, `_`; começa por letra ou número; único |
+| `name` | **string** JSON | sim | Sem espaços externos; 3 a 120 caracteres |
+| `description` | **string** JSON ou `null` | não | Ausente, `null`, vazia ou só com espaços → `null`; senão sem espaços externos e até 500 caracteres |
 | `price` | **número** JSON | sim | > 0, ≤ 99999999.99, até 2 casas decimais significativas (`10.500` é aceito como `10.50`; `10.505` é rejeitado); string é rejeitada |
 
-Qualquer outra propriedade, inclusive `id`, `createdAt` e `updatedAt`, é rejeitada com `400`.
+Não há coerção de tipos: número ou booleano em campo de texto (`"sku": 123`) e string em `price` são rejeitados com `400`. Qualquer outra propriedade, inclusive `id`, `createdAt` e `updatedAt`, também é rejeitada com `400`.
 
 ### Respostas
 
 | Status | Quando | Corpo |
 |---|---|---|
 | `201 Created` | Produto criado | Produto completo, com o cabeçalho `Location` (URI absoluta do recurso) |
-| `400 Bad Request` | Regra violada, campo desconhecido, tipo inválido, JSON malformado ou corpo ausente | `ProblemDetail` com `code: VALIDATION_FAILED` e, quando identificáveis, `errors` |
+| `400 Bad Request` | Regra violada, campo desconhecido, tipo JSON incorreto, JSON malformado ou corpo ausente | `ProblemDetail` com `code: VALIDATION_FAILED` e, quando identificáveis, `errors` |
+| `406 Not Acceptable` | `Accept` não admite `application/json` | Padrão do Spring; nada é gravado |
 | `409 Conflict` | SKU normalizado já existe, inclusive em criações simultâneas | `ProblemDetail` com `code: PRODUCT_SKU_CONFLICT` |
 
 Os erros usam `application/problem+json` ([RFC 9457](https://www.rfc-editor.org/rfc/rfc9457)), com `title`, `status`, `detail`, `instance` e a extensão `code`. O `type` é omitido (equivale a `about:blank`). Nunca contêm SQL, nomes de constraint, classes Java ou stack trace.

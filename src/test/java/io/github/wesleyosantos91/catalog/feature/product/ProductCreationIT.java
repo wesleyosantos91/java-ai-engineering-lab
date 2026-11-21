@@ -128,6 +128,28 @@ class ProductCreationIT {
 		assertThat(count()).isZero();
 	}
 
+	// PRD 6.1 — sku, name e description são strings JSON; outros tipos não são convertidos.
+	@ParameterizedTest
+	@ValueSource(strings = { "\"sku\": 123, \"name\": \"Caneta\"", "\"sku\": \"ABC-001\", \"name\": true",
+			"\"sku\": \"ABC-001\", \"name\": \"Caneta\", \"description\": 42",
+			"\"sku\": [\"ABC-001\"], \"name\": \"Caneta\"" })
+	void rejectsNonStringTextFields(String members) {
+		HttpResponse<String> response = api.create("{" + members + ", \"price\": 1.00}");
+
+		assertProblem(response, 400, "VALIDATION_FAILED");
+		assertThat(errorFields(response)).hasSize(1).isSubsetOf("sku", "name", "description");
+		assertThat(count()).isZero();
+	}
+
+	// Negociação de conteúdo: um formato de resposta não suportado é rejeitado antes de gravar.
+	@Test
+	void rejectsUnsupportedResponseMediaTypeWithoutPersisting() {
+		HttpResponse<String> response = api.create(valid("ABC-001"), "text/html");
+
+		assertThat(response.statusCode()).isEqualTo(406);
+		assertThat(count()).isZero();
+	}
+
 	// CA-11 — descrição omitida, nula, vazia ou só com espaços vira null.
 	@ParameterizedTest
 	@ValueSource(strings = { "", ", \"description\": null", ", \"description\": \"\"", ", \"description\": \"   \"" })

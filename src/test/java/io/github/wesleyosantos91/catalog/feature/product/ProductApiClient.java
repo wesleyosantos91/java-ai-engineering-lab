@@ -18,9 +18,13 @@ final class ProductApiClient {
 	}
 
 	HttpResponse<String> create(String json) {
+		return create(json, "application/json");
+	}
+
+	HttpResponse<String> create(String json, String accept) {
 		HttpRequest request = HttpRequest.newBuilder(products)
 			.header("Content-Type", "application/json")
-			.header("Accept", "application/json")
+			.header("Accept", accept)
 			.POST(HttpRequest.BodyPublishers.ofString(json))
 			.build();
 		try {

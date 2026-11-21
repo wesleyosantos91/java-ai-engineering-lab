@@ -72,6 +72,8 @@ Nenhum identificado.
 | RF-07 | Rejeitar propriedades JSON desconhecidas ou gerenciadas pelo servidor (`id`, `createdAt`, `updatedAt`, outras) | `{"id": "...", ...}` → `400` | `400 VALIDATION_FAILED`; nada é persistido | PRD 1.0 §6.1.1; CA-10 |
 | RF-08 | Responder erros em `application/problem+json`, com `type`, `title`, `status`, `detail`, `instance` e a extensão `code`, sem SQL, stack trace ou detalhes internos | — | — | PRD 1.0 §6.3 |
 | RF-09 | Rejeitar corpo ausente, JSON malformado e campos obrigatórios ausentes ou `null` | — | `400 VALIDATION_FAILED` | PRD 1.0 §5.1, §6.1 |
+| RF-10 | Rejeitar tipos JSON incorretos sem coerção: número, booleano ou array em `sku`, `name` ou `description` | `{"sku": 123, ...}` → `400` | `400 VALIDATION_FAILED`; nada é persistido | PRD 1.0 §6.1 (achado do review do PR #1) |
+| RF-11 | Rejeitar `Accept` incompatível antes de gravar | `Accept: text/html` → `406` | Nada é persistido | Contrato HTTP; achado do review do PR #1 |
 
 ### 5.1 Decisões complementares ao PRD
 
@@ -271,6 +273,8 @@ Conforme a [Definition of Done](../../engineering/definition-of-done.md):
 | idem | CA-01, CA-02, VAL-01, CA-10 manual | `bash ./mvnw spring-boot:test-run` e `curl -X POST` | 201 com `Location` absoluta e descrição `null`; 409 `PRODUCT_SKU_CONFLICT`; 400 `VALIDATION_FAILED` com `errors` (saídas na [referência da API](../../reference/api/products.md)) |
 | idem | Disponibilidade | `DURATION=5s bash scripts/performance/smoke.sh` | PASS: 3.154 requisições, 0% de falhas |
 | idem | Segurança | `bash scripts/security/scan-secrets.sh`; busca por SQL concatenado e logs de exceção | PASS; nenhuma ocorrência |
+| 2026-11-20, mesmo ambiente | RF-10 e RF-11 (review do Devin no PR #1): Red | `bash scripts/test/integration.sh` com `rejectsNonStringTextFields` e `rejectsUnsupportedResponseMediaTypeWithoutPersisting` | FAIL: 4 falhas; `{"sku":123}`, `"name":true` e `"description":42` retornaram `201`; `Accept: text/html` gravou o produto (count esperado 0) |
+| idem | RF-10 e RF-11: Green | `bash scripts/test/integration.sh` | PASS: 38 testes |
 
 ### Verificações não executadas
 
@@ -292,7 +296,7 @@ Conforme a [Definition of Done](../../engineering/definition-of-done.md):
 | Agentes e modelos | Claude Code (Opus 5.5): especificação, TDD, implementação e verificação |
 | Contratos de referência | PRD-001 1.0 (seções 4 a 8), ADR-0001, `docs/features/TEMPLATE.md` da branch `feature/ai-first-foundation` |
 | Intervenções humanas | Escolha da FEAT-0001 como exemplo ponta a ponta e aprovação do escopo e de D-01 a D-06, ambas em 2026-11-20 |
-| Aprendizados registrados | LL-0010, LL-0011 |
+| Aprendizados registrados | LL-0010 a LL-0015 |
 
 ## 13. Aprovação
 

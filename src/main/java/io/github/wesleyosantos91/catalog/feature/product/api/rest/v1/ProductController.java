@@ -24,7 +24,8 @@ public class ProductController {
 		this.service = service;
 	}
 
-	@PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+	// produces: um Accept incompatível é rejeitado (406) antes de o handler gravar o produto.
+	@PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<ProductResponse> create(@RequestBody CreateProductRequest request) {
 		ProductDetails created = service.create(request.toCommand());
 		URI location = ServletUriComponentsBuilder.fromCurrentRequestUri()

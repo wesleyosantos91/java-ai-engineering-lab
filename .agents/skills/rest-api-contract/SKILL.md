@@ -22,6 +22,8 @@ O [PRD, seções 5 e 6](../../../docs/product/prd.md) define rotas, status, repr
 4. **Validação** — Bean Validation na borda para formato; invariantes de negócio no `domain`.
 5. **Erros** — `ProblemDetail` com `application/problem+json` e campos `type`, `title`, `status`, `detail` e `instance` conforme aplicável. Centralize a tradução em um `@RestControllerAdvice`. Não exponha stack traces, SQL ou dados sensíveis.
 6. **Controller fino** — Delegue ao `service`; sem SQL, repository ou regra de negócio.
+7. **Tipos JSON estritos** — O Jackson converte números e booleanos em `String` (e strings em números) por padrão. Campos com tipo definido no contrato validam o token (`JsonStringOnlyDeserializer`, `JsonNumberOnlyDeserializer`); teste o tipo errado de cada campo ([LL-0012](../../../docs/ai/lessons-learned.md)).
+8. **`produces` em operações com efeito colateral** — Sem `produces`, o handler executa e grava antes de o Spring responder `406`. Declare `produces` em `POST`, `PUT` e `DELETE` e teste que um `Accept` incompatível não persiste nada ([LL-0013](../../../docs/ai/lessons-learned.md)).
 
 ## Testes de contrato
 
