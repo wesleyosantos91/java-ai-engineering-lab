@@ -7,7 +7,11 @@ set -Eeuo pipefail
 #
 # Uso: bash scripts/agents/export-kit.sh <destino> [--base-package <pacote>] [--main-class <Classe>]
 #                                                 [--project-name <nome>]
+#      bash scripts/agents/export-kit.sh <destino> --seed
 #
+# - --seed gera o chassi público (GitHub Template): pacote com.example.seed, classe SeedApplication,
+#   aplicação mínima compilável, LICENSE/NOTICE e README de uso; scripts/agents/init-project.sh
+#   troca esses nomes no repositório criado a partir do template.
 # - Arquivos que já existem no destino nunca são sobrescritos: a versão do kit é gravada como
 #   <arquivo>.kit para mesclagem manual.
 # - Marcadores nos Markdown (<!-- kit:omit-line -->, <!-- kit:replace-line: TEXTO -->,
@@ -17,24 +21,38 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 ROOT_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd -P)"
 source "${SCRIPT_DIR}/../lib/pom.sh"
+source "${SCRIPT_DIR}/../lib/rename.sh"
+
+# Nomes do seed: init-project.sh os procura para renomear (não altere um sem o outro).
+SEED_PACKAGE=com.example.seed
+SEED_MAIN=SeedApplication
+SEED_NAME='Java AI-First Seed'
+SEED_SLUG=java-ai-first-seed
 
 usage() {
   echo "Uso: bash scripts/agents/export-kit.sh <destino> [--base-package <pacote>] [--main-class <Classe>] [--project-name <nome>]" >&2
+  echo "     bash scripts/agents/export-kit.sh <destino> --seed" >&2
   exit 1
 }
 
-dest='' new_package='' new_main='' project_name=''
+dest='' new_package='' new_main='' project_name='' seed=0
 while (( $# )); do
   case "$1" in
     --base-package) [[ -n "${2:-}" ]] || usage; new_package="$2"; shift 2 ;;
     --main-class) [[ -n "${2:-}" ]] || usage; new_main="$2"; shift 2 ;;
     --project-name) [[ -n "${2:-}" ]] || usage; project_name="$2"; shift 2 ;;
+    --seed) seed=1; shift ;;
     -h|--help) usage ;;
     -*) echo "[FAIL] Opção desconhecida: $1" >&2; usage ;;
     *) [[ -z "${dest}" ]] || usage; dest="$1"; shift ;;
   esac
 done
 [[ -n "${dest}" ]] || usage
+if (( seed )); then
+  [[ -z "${new_package}${new_main}${project_name}" ]] || {
+    echo "[FAIL] --seed usa nomes fixos; personalize depois com scripts/agents/init-project.sh." >&2; exit 1; }
+  new_package="${SEED_PACKAGE}" new_main="${SEED_MAIN}" project_name="${SEED_NAME}"
+fi
 if [[ -n "${new_package}" && ! "${new_package}" =~ ^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$ ]]; then
   echo "[FAIL] --base-package inválido: '${new_package}' (ex.: com.acme.orders)." >&2; exit 1
 fi
@@ -58,6 +76,102 @@ mkdir -p "${DEST}"
 
 STAGE="$(mktemp -d)"
 trap 'rm -rf "${STAGE}"' EXIT
+
+# Chassi do seed: aplicação mínima compilável, identidade Maven neutra, licença e README de uso.
+write_seed_chassis() {
+  local main_dir="${STAGE}/src/main/java/${SEED_PACKAGE//.//}" resources="${STAGE}/src/main/resources"
+  mkdir -p "${main_dir}" "${resources}/db/migration"
+  cat > "${main_dir}/${SEED_MAIN}.java" <<EOF
+package ${SEED_PACKAGE};
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class ${SEED_MAIN} {
+
+	public static void main(String[] args) {
+		SpringApplication.run(${SEED_MAIN}.class, args);
+	}
+
+}
+EOF
+  cat > "${resources}/application.yaml" <<EOF
+spring:
+  application:
+    name: ${SEED_SLUG}
+  jackson:
+    deserialization:
+      # Propriedades JSON desconhecidas são rejeitadas, nunca ignoradas (ajuste conforme o PRD).
+      fail-on-unknown-properties: true
+  mvc:
+    problemdetails:
+      enabled: true
+EOF
+  : > "${resources}/db/migration/.gitkeep"
+  # Identidade do projeto: groupId e artifactId logo após o <parent>.
+  sed -i "/<\/parent>/,/<artifactId>/ { s#<groupId>[^<]*</groupId>#<groupId>com.example</groupId>#; s#<artifactId>[^<]*</artifactId>#<artifactId>${SEED_SLUG}</artifactId>#; }" \
+    "${STAGE}/pom.xml"
+  [[ -f "${ROOT_DIR}/LICENSE" && -f "${ROOT_DIR}/NOTICE" ]] ||
+    { echo "[FAIL] --seed exige LICENSE e NOTICE na raiz do repositório de origem." >&2; exit 1; }
+  cp "${ROOT_DIR}/LICENSE" "${STAGE}/LICENSE"
+  sed "1s/.*/${SEED_NAME}/" "${ROOT_DIR}/NOTICE" > "${STAGE}/NOTICE"
+  cat > "${STAGE}/README.md" <<'EOF'
+# Java AI-First Seed
+
+Chassi de contexto para projetos Java desenvolvidos com agentes de IA (Codex, Claude Code, Devin). Não contém regra de negócio: traz as instruções dos agentes, as skills, o harness de verificação, os quality gates, a governança e um PRD guiado para o time de negócio preencher.
+
+## O que vem pronto
+
+| Parte | Onde |
+|---|---|
+| Instruções e skills dos agentes | [AGENTS.md](AGENTS.md), `.agents/skills/`, adaptadores `CLAUDE.md`, `.claude/`, `.codex/` |
+| Harness (build, testes, quality gates, segredos, hooks Git) | `scripts/`, guia em [run-tests.md](docs/how-to/run-tests.md) |
+| Aplicação mínima | Spring Boot 4, Java 27, Spring JDBC, PostgreSQL, Flyway, Testcontainers; sem endpoints |
+| PRD a preencher | [docs/product/prd.md](docs/product/prd.md) |
+| Decisões herdadas (para revisar) | [docs/architecture/adr/](docs/architecture/adr/README.md) |
+| Critérios de conclusão | [definition-of-done.md](docs/engineering/definition-of-done.md) |
+
+## Como começar
+
+1. **Criar o repositório:** botão *Use this template* no GitHub e clone do novo repositório.
+2. **Dar nome ao projeto** (troca pacote, classe principal, identidade Maven e este README):
+
+   ```bash
+   bash scripts/agents/init-project.sh --base-package com.acme.orders \
+     --main-class OrdersApplication --project-name "Orders Service"
+   ```
+
+3. **Time de negócio: preencher o PRD** em [docs/product/prd.md](docs/product/prd.md). Cada seção diz quem a preenche (`Negócio`, `Engenharia` ou `Ambos`) e se é obrigatória; os campos pendentes aparecem como `[PREENCHER-NEGÓCIO: ...]` e `[PREENCHER-ENGENHARIA: ...]`. Para ver o que falta, por responsável:
+
+   ```bash
+   bash scripts/product/check-prd.sh
+   ```
+
+   O PRD só pode ser marcado como **Aprovado** sem pendências; a verificação dos agentes falha caso contrário.
+
+4. **Engenharia:** complete as seções técnicas do PRD, ajuste o `AGENTS.md` (§1 propósito, §2 stack), revise os ADRs herdados, `CODEOWNERS`, `OWNER/REPO` nos templates de issue e a licença.
+5. **Ativar o harness:**
+
+   ```bash
+   bash scripts/git/install-hooks.sh
+   bash scripts/setup.sh
+   bash scripts/verify.sh
+   ```
+
+   Sem código de negócio, unitários, arquitetura e cobertura retornam SKIP e o resultado é PARCIAL. É o esperado até a primeira feature.
+
+6. **Primeira feature:** com o PRD aprovado, peça ao agente a skill `feature-delivery`.
+
+## Origem
+
+Este repositório é gerado por `scripts/agents/export-kit.sh --seed` a partir do repositório de referência [java-ai-engineering-lab](https://github.com/wesleyosantos91/java-ai-engineering-lab). Correções no chassi devem ser feitas lá e regeneradas aqui.
+
+## Licença
+
+[Apache License 2.0](LICENSE). Projetos criados a partir deste template escolhem a própria licença.
+EOF
+}
 
 # 1. Conteúdo do kit: somente arquivos versionáveis (rastreados ou novos não ignorados).
 include=(
@@ -110,33 +224,21 @@ cp "${STAGE}/docs/product/TEMPLATE.md" "${STAGE}/docs/product/prd.md"
 sed -i '/^\* @/ s/.*/# [ADAPTAR: * @owner-ou-time]/' "${STAGE}/.github/CODEOWNERS"
 find "${STAGE}/.github" -type f -exec sed -i 's#wesleyosantos91/java-ai-engineering-lab#OWNER/REPO#g' {} +
 
-# 5. Pacote base, classe principal e nome do projeto (opcionais).
-text_files() { grep -rlI --exclude-dir=.git "$1" "${STAGE}" || true; }
-if [[ -n "${new_package}" && "${new_package}" != "${old_package}" ]]; then
-  new_path="${new_package//.//}"
-  while IFS= read -r file; do [[ -n "${file}" ]] && sed -i "s#${old_package//./\\.}#${new_package}#g" "${file}"; done < <(text_files "${old_package}")
-  while IFS= read -r file; do [[ -n "${file}" ]] && sed -i "s#${old_path}#${new_path}#g" "${file}"; done < <(text_files "${old_path}")
-  mkdir -p "${STAGE}/src/test/java/${new_path}"
-  cp -R "${STAGE}/src/test/java/${old_path}/." "${STAGE}/src/test/java/${new_path}/"
-  rm -rf "${STAGE}/src/test/java/${old_path%%/*}"
-  [[ -d "${STAGE}/src/test/java/${new_path}" ]] || { echo "[FAIL] Falha ao mover o pacote de testes." >&2; exit 1; }
-fi
-if [[ -n "${new_main}" && "${new_main}" != "${old_main}" ]]; then
-  while IFS= read -r file; do [[ -n "${file}" ]] && sed -i "s#${old_main}#${new_main}#g" "${file}"; done < <(text_files "${old_main}")
-  while IFS= read -r -d '' file; do
-    mv "${file}" "${file//${old_main}/${new_main}}"
-  done < <(find "${STAGE}/src" -type f -name "*${old_main}*" -print0)
-fi
+# 5. Pacote base, classe principal e nome do projeto (opcionais; fixos no modo --seed).
+rename_package "${STAGE}" "${old_package}" "${new_package:-${old_package}}"
+rename_main_class "${STAGE}" "${old_main}" "${new_main:-${old_main}}"
 name="${project_name:-[PREENCHER: nome do projeto]}"
-while IFS= read -r file; do [[ -n "${file}" ]] && sed -i "s#Java AI Engineering Lab#${name}#g" "${file}"; done < <(text_files 'Java AI Engineering Lab')
+rename_literal "${STAGE}" 'Java AI Engineering Lab' "${name}"
 # Nome do devcontainer: slug do projeto, se informado.
-slug="$(printf '%s' "${project_name:-app}" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+|-+$//g')"
-sed -i "s#\"name\": \"java-ai-engineering-lab\"#\"name\": \"${slug:-app}\"#" "${STAGE}/.devcontainer/devcontainer.json"
+slug="$(project_slug "${project_name:-app}")"
+# Só a primeira ocorrência: o nome do contêiner, não de outros objetos do arquivo.
+sed -i "0,/\"name\": \"[^\"]*\"/ s##\"name\": \"${slug:-app}\"#" "${STAGE}/.devcontainer/devcontainer.json"
+if (( seed )); then write_seed_chassis; fi
 
 if [[ -e "${DEST}/README.md" ]]; then
   # O README do destino é mantido; a verificação abaixo usa o estado final real.
   cp -p "${DEST}/README.md" "${STAGE}/README.md"
-else
+elif [[ ! -e "${STAGE}/README.md" ]]; then
   printf '# %s\n\n[PREENCHER: o que o projeto faz e como começar.]\n\nInstruções para agentes de IA: [AGENTS.md](AGENTS.md). Como contribuir: [CONTRIBUTING.md](CONTRIBUTING.md).\n' \
     "${name}" > "${STAGE}/README.md"
 fi
@@ -170,6 +272,11 @@ echo "[PASS] Kit exportado para ${DEST}: ${copied} arquivo(s) novo(s); check-con
 if (( ${#conflicts[@]} > 0 )); then
   echo "[AVISO] ${#conflicts[@]} arquivo(s) já existiam; a versão do kit está em <arquivo>.kit para mesclar:"
   printf '  - %s\n' "${conflicts[@]}"
+fi
+if (( seed )); then
+  echo "[INFO] Seed gerado. Antes de publicar: git init, bash scripts/git/install-hooks.sh e bash scripts/verify.sh no destino."
+  echo "[INFO] Projetos criados a partir dele começam por: bash scripts/agents/init-project.sh (ver README.md do seed)."
+  exit 0
 fi
 echo "[INFO] Checklist de adaptação (guia completo no repositório de origem: docs/how-to/adopt-in-new-repository.md):"
 [[ -n "${new_package}" ]] || echo "  - Pacote base mantido (${old_package}); use --base-package ou ajuste pom.xml (app.*) e src/test/java."

@@ -86,4 +86,57 @@ expect 1 'dentro deste repositório' bash "${EXPORT}" "${ROOT_DIR}/docs/kit-fora
 assert test ! -e "${ROOT_DIR}/docs/kit-fora-de-lugar"
 assert test ! -e "${WORK}/x"
 
+# Seed público (--seed): chassi compilável com nomes neutros, sem resíduos do produto. O README
+# do seed aponta para este repositório de referência, por isso o padrão do slug fica de fora aqui.
+expect 1 '--seed usa nomes fixos' bash "${EXPORT}" "${WORK}/y" --seed --base-package com.acme.x
+assert test ! -e "${WORK}/y"
+dest="${WORK}/seed"
+expect 0 '[PASS] Kit exportado' bash "${EXPORT}" "${dest}" --seed
+none 'io\.github\.wesleyosantos91|JavaAiEngineeringLab|Java AI Engineering Lab|Product Catalog'
+none 'FEAT-0001-create-product|0004-ai-first|reference/api|LL-0[0-9]{3}|<!-- kit:'
+assert test -f "${dest}/src/main/java/com/example/seed/SeedApplication.java"
+assert test -f "${dest}/src/test/java/com/example/seed/SeedApplicationIT.java"
+assert test -f "${dest}/src/main/resources/db/migration/.gitkeep"
+assert grep -q 'name: java-ai-first-seed' "${dest}/src/main/resources/application.yaml"
+assert grep -q '<groupId>com.example</groupId>' "${dest}/pom.xml"
+assert grep -q '<artifactId>java-ai-first-seed</artifactId>' "${dest}/pom.xml"
+assert grep -q '<app.mainClass>SeedApplication</app.mainClass>' "${dest}/pom.xml"
+assert grep -qx 'Java AI-First Seed' <(head -n 1 "${dest}/NOTICE")
+assert test -f "${dest}/LICENSE"
+assert grep -q 'init-project.sh' "${dest}/README.md"
+expect 3 'PRD em elaboração' bash "${dest}/scripts/product/check-prd.sh"
+
+# init-project.sh no repositório criado a partir do template.
+git -C "${dest}" init -q
+git -C "${dest}" add -A
+expect 0 '' git -C "${dest}" diff --cached --check
+git -C "${dest}" -c user.name=harness -c user.email=harness@example.invalid commit -qm 'chore: seed' --no-verify
+init=("${dest}/scripts/agents/init-project.sh" --base-package com.acme.orders --main-class OrdersApplication)
+expect 1 'Uso:' bash "${init[@]}"
+expect 1 '--base-package inválido' bash "${dest}/scripts/agents/init-project.sh" --base-package Acme \
+  --main-class OrdersApplication --project-name 'Orders Service'
+touch "${dest}/sujo.txt"
+expect 1 'Working tree com alterações' bash "${init[@]}" --project-name 'Orders Service'
+rm "${dest}/sujo.txt"
+expect 0 '[PASS] Orders Service inicializado' bash "${init[@]}" --project-name 'Orders Service'
+none 'com\.example\.seed|com/example/seed|SeedApplication|java-ai-first-seed|Java AI-First Seed'
+assert test -f "${dest}/src/main/java/com/acme/orders/OrdersApplication.java"
+assert test -f "${dest}/src/test/java/com/acme/orders/OrdersApplicationIT.java"
+assert test -f "${dest}/src/test/java/com/acme/orders/architecture/ArchitectureTest.java"
+assert test ! -e "${dest}/src/main/java/com/example"
+assert grep -q '<groupId>com.acme</groupId>' "${dest}/pom.xml"
+assert grep -q '<artifactId>orders-service</artifactId>' "${dest}/pom.xml"
+assert grep -q '<app.basePath>com/acme/orders</app.basePath>' "${dest}/pom.xml"
+assert grep -q 'name: orders-service' "${dest}/src/main/resources/application.yaml"
+assert grep -q '"name": "orders-service"' "${dest}/.devcontainer/devcontainer.json"
+assert grep -q '^# Orders Service' "${dest}/README.md"
+# Os scripts guardam os nomes do seed como constantes e não são reescritos.
+assert grep -q '^SEED_PACKAGE=com.example.seed$' "${dest}/scripts/agents/init-project.sh"
+assert grep -q 'seed/SeedApplication.java' "${dest}/scripts/harness-tests/export-kit.sh"
+git -C "${dest}" add -A
+expect 0 '' git -C "${dest}" diff --cached --check
+git -C "${dest}" -c user.name=harness -c user.email=harness@example.invalid commit -qm 'chore: init' --no-verify
+expect 1 'Projeto já inicializado' bash "${init[@]}" --project-name 'Orders Service'
+expect 0 '[PASS] Contratos do harness verificados' bash "${dest}/scripts/harness-tests/harness.sh"
+
 echo "[PASS] Kit de adoção exportado e verificado em destinos temporários (removidos ao final)."
