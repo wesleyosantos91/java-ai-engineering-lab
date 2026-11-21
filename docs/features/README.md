@@ -9,7 +9,7 @@ As especificações detalham o trabalho autorizado e não substituem os contrato
 | Fonte | Relação com as features |
 |---|---|
 | [PRD](../product/prd.md) | Define requisitos aprovados e critérios de aceitação; referencie versão e seções pertinentes |
-| [Princípios de arquitetura — ADR-0001](../architecture/adr/0001-architecture-principles.md) | Registra decisões arquiteturais aceitas |
+| [ADRs — índice e processo](../architecture/adr/README.md), a partir do [ADR-0001](../architecture/adr/0001-architecture-principles.md) | Registram decisões arquiteturais e seu histórico; apenas ADRs com status Aceita são norma vigente |
 | [Convenções de packages](../architecture/package-conventions.md) e [regras de dependência](../architecture/dependency-rules.md) | Orientam organização e fronteiras técnicas |
 | [Definition of Done](../engineering/definition-of-done.md) | Define critérios de conclusão e política de exceções |
 | [AGENTS.md](../../AGENTS.md) | Orienta descoberta de contexto, autonomia, implementação e uso do harness local |
@@ -29,17 +29,12 @@ Arquivos presentes neste catálogo:
 ```text
 docs/features/
 ├── README.md
-└── TEMPLATE.md
+├── TEMPLATE.md
+└── FEAT-0001-create-product/
+    └── spec.md
 ```
 
-Estrutura futura, apenas ilustrativa; o diretório de exemplo abaixo não representa uma feature cadastrada:
-
-```text
-docs/features/
-└── FEAT-0001-example-feature/
-    ├── spec.md
-    └── design.md
-```
+Uma feature pode ter também `design.md`, opcional, quando a complexidade justificar.
 
 | Arquivo | Responsabilidade |
 |---|---|
@@ -85,10 +80,9 @@ Os estados são mantidos manualmente nos arquivos. Não criam issues, labels, pr
 
 ## Catálogo de features
 
-Não há features cadastradas neste catálogo.
-
 | ID | Nome | Status | Contrato de referência | Link da especificação |
 |---|---|---|---|---|
+| FEAT-0001 | Criar produto (`POST /api/v1/products`) | Em validação | PRD-001 1.0, §4, §5.1, §6, §7; CA-01, 02, 03, 08, 10, 11 | [spec.md](FEAT-0001-create-product/spec.md) |
 
 Ao registrar uma demanda real, inclua uma linha e um link relativo para seu `spec.md`, mantendo o status sincronizado com a especificação. Não preencha a tabela com exemplos ou capacidades futuras sem demanda registrada.
 
@@ -113,12 +107,6 @@ Na especificação, mantenha o histórico com data, escopo anterior, alteração
 ### Documentar dependências
 
 Relacione cada dependência por ID e link para a especificação existente. Descreva o contrato necessário, a condição de liberação e o impacto de atraso ou cancelamento. Diferencie dependência obrigatória de simples relação. Dependências ainda não cadastradas devem ser identificadas como pendências, sem links para arquivos inexistentes. Registre os impactos também na feature afetada e encaminhe ciclos ou conflitos ao responsável técnico.
-
-### Preservar experimentos AI-Assisted e AI-First
-
-Antes de executar um experimento, identifique na especificação o protocolo autorizado, a modalidade, a sessão ou execução, o commit de baseline e as revisões exatas de PRD, ADRs e especificação. Use referências Git imutáveis para recuperar os contratos congelados, sem sobrescrever resultados anteriores.
-
-Mudanças posteriores exigem decisão registrada e avaliação no protocolo experimental; não misture medições de contratos ou sessões diferentes. Registre ferramentas e modelos quando aplicável, comandos, ambiente e resultados observados. Separe medições de estimativas e mantenha testes de avaliação independente fora do contexto dos agentes conforme o PRD. Não invente tempo, tokens, custo ou resultados.
 
 ## Validação e documentação da entrega
 

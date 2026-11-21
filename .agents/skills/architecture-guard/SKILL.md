@@ -33,7 +33,7 @@ Esta skill resume os pontos de verificação; em divergência, os documentos pre
 Execute as regras automatizadas:
 
 ```bash
-bash scripts/test-architecture.sh
+bash scripts/test/architecture.sh
 ```
 
 As regras estão em `src/test/java/io/github/wesleyosantos91/catalog/architecture/ArchitectureTest.java` e cobrem a verificação 3, as proibições das verificações 2 e 6, o acesso a persistence e SQL da 4 e a ausência de JPA da 5. Regras sem classes elegíveis aparecem como SKIP, não como aprovação.

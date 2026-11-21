@@ -31,12 +31,11 @@ Consulte o [workflow operacional](references/workflow.md) apenas nas fases perti
 - Fases 1–3: intake, contrato, especificação e aprovação.
 - Fases 4–6: planejamento, implementação e verificação.
 - Fases 7–9: documentação, revisão e transições de estado.
-- Fase 10: experimentos controlados, somente quando vinculados ao trabalho.
 
 Carregue PRD, ADRs, documentos de engenharia e referências especializadas conforme a necessidade de cada fase, sem ler todo o repositório automaticamente. A saída esperada é um relato do escopo realizado, arquivos envolvidos, critérios atendidos, comandos e resultados reais, limitações e decisões humanas pendentes.
 
 ## Compatibilidade
 
-A localização canônica é `.agents/skills/feature-delivery/SKILL.md`. A descoberta desse caminho depende do cliente; sua existência ou referência no AGENTS.md não garante ativação automática em Codex, Claude, GitHub Copilot ou Devin. Se necessário, leia o arquivo explicitamente. Não duplique a skill em diretórios de provedores sem necessidade comprovada e decisão autorizada.
+A localização canônica é `.agents/skills/feature-delivery/SKILL.md`, lida nativamente por Codex e Devin. O Claude Code usa o stub gerado em `.claude/skills/` ([ADR-0002](../../../docs/architecture/adr/0002-multi-provider-agent-context.md)). A descoberta depende do cliente e não garante ativação automática; se necessário, leia o arquivo explicitamente. Não duplique o conteúdo da skill em diretórios de provedores.
 
 O formato segue a [especificação Agent Skills](https://agentskills.io/specification). Nenhum comando específico de provedor é necessário para executar este fluxo.

@@ -32,7 +32,7 @@ Se contrato e implementação divergirem, reporte a divergência; não a esconda
 - **Reference** (`docs/reference/`): contratos, parâmetros, formatos e comportamentos consultáveis; sem conteúdo especulativo.
 - **Explanation** (`docs/explanation/`): mecanismo causal, racional técnico, alternativas, trade-offs e riscos.
 
-Preserve os diretórios existentes `docs/product/`, `docs/architecture/`, `docs/engineering/`, `docs/ai/` e `docs/experiments/`. Não migre documentos aprovados sem necessidade e não crie pastas vazias.
+Preserve os diretórios existentes `docs/product/`, `docs/architecture/`, `docs/engineering/`, `docs/features/`, `docs/how-to/` e `docs/ai/`. Não migre documentos aprovados sem necessidade e não crie pastas vazias.
 
 ## Procedimento obrigatório
 
@@ -56,7 +56,7 @@ Preserve os diretórios existentes `docs/product/`, `docs/architecture/`, `docs/
 - Explicações: contexto, mecanismo, trade-offs e referências a ADRs quando relevantes.
 - Evite duplicar regras normativas: prefira links para a fonte de verdade.
 - Evite afirmações como "produção pronta", "testado" ou "seguro" sem evidência.
-- Não atualize PRDs aprovados, ADRs aceitos nem resultados experimentais sem permissão.
+- Não atualize PRDs aprovados nem ADRs aceitos sem permissão.
 - Atualize documentação junto à mudança funcional que a tornou desatualizada, respeitando o escopo autorizado.
 
 ## Referências sob demanda

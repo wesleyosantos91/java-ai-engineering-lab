@@ -14,12 +14,12 @@ Execute os comandos a partir da raiz. Os scripts também funcionam quando invoca
 
 ```bash
 bash scripts/setup.sh
-bash scripts/test-unit.sh
-bash scripts/test-architecture.sh
-bash scripts/test-integration.sh
-bash scripts/test-coverage.sh     # após as suítes; não executa testes
-bash scripts/verify.sh            # build, unitários, arquitetura, integração e cobertura
-bash scripts/test-mutation.sh     # explícito; fora do verify.sh
+bash scripts/test/unit.sh
+bash scripts/test/architecture.sh
+bash scripts/test/integration.sh
+bash scripts/quality/coverage.sh     # após as suítes; não executa testes
+bash scripts/verify.sh            # configuração de agentes, build, unitários, arquitetura, integração e cobertura
+bash scripts/quality/mutation.sh     # explícito; fora do verify.sh
 ```
 
 ## Escolher a suíte
@@ -32,7 +32,7 @@ bash scripts/test-mutation.sh     # explícito; fora do verify.sh
 
 As versões dos plugins são gerenciadas pelo parent Spring Boot 4.1.2. Não usar as convenções padrão alternativas `*Tests`, `Test*` ou `*ITCase` para novos testes: os includes do POM são explícitos. Classes auxiliares, como `TestcontainersConfiguration` e a aplicação de desenvolvimento `TestJavaAiEngineeringLabApplication`, não são testes executáveis.
 
-Unitários não devem usar `@SpringBootTest`, importar a configuração de contêineres nem depender de Docker. O teste de contexto foi renomeado para `JavaAiEngineeringLabApplicationIT`; ele inicializa PostgreSQL com `@ServiceConnection` e verifica `SHOW server_version` por JDBC. Ainda não há testes unitários de produto nem integração de regras de negócio.
+Unitários não devem usar `@SpringBootTest`, importar a configuração de contêineres nem depender de Docker. O teste de contexto foi renomeado para `JavaAiEngineeringLabApplicationIT`; ele inicializa PostgreSQL com `@ServiceConnection` e verifica `SHOW server_version` por JDBC. Os testes de produto da [FEAT-0001](../features/FEAT-0001-create-product/spec.md) são `*Test` em `feature/product/domain` e `feature/product/service` e `ProductCreationIT`/`ProductConcurrencyIT`, com HTTP real e PostgreSQL.
 
 Comandos equivalentes ao Maven usado pelos scripts, quando houver classes elegíveis:
 
@@ -63,7 +63,7 @@ Erros de shell também retornam código diferente de zero. Falhas Maven são nor
 
 Os scripts removem somente os XML gerados da própria suíte antes da execução e leem os contadores `tests`, `failures`, `errors` e `skipped` dos novos relatórios. Não executá-los simultaneamente na mesma árvore, pois compartilham `target/`. O parser espera o formato XML padrão dos plugins fixados; um formato incompatível resulta em FAIL.
 
-`verify.sh` executa build (`clean compile`), unitários, arquitetura, integração e cobertura, sem repetir unitários na etapa de integração. A mutação não faz parte desse fluxo. Em erro, retorna código diferente de zero e resume etapas restantes como NOT RUN. Em SKIP, continua e termina com exit `0`, resumo por etapa e resultado PARCIAL. Esse retorno permite inspecionar a integração mesmo sem unitários; não é evidência de aceitação completa pela [DoD](../engineering/definition-of-done.md).
+`verify.sh` executa a verificação da configuração de agentes (`agents/check-config.sh`, sem Maven; ver [context engineering](../ai/context-engineering.md#harness-da-configuração)), build (`clean compile`), unitários, arquitetura, integração e cobertura, sem repetir unitários na etapa de integração. A mutação não faz parte desse fluxo. Em erro, retorna código diferente de zero e resume etapas restantes como NOT RUN. Em SKIP, continua e termina com exit `0`, resumo por etapa e resultado PARCIAL. Esse retorno permite inspecionar a integração mesmo sem unitários; não é evidência de aceitação completa pela [DoD](../engineering/definition-of-done.md).
 
 Somente quando autorizado ou com justificativa comunicada:
 
@@ -91,28 +91,34 @@ Isso segue a [orientação oficial do Mockito 5.23.0 para Java 21+](https://gith
 
 ```bash
 # Contratos de status e erros, sem Maven/Docker reais.
-bash scripts/tests/test-harness.sh
+bash scripts/harness-tests/harness.sh
 
 # Maven/Docker reais, em cópia temporária, com as duas convenções coexistindo.
-bash scripts/tests/test-maven-isolation.sh
+bash scripts/harness-tests/maven-isolation.sh
 
 # Maven real, em cópia temporária: quality gates rejeitam violações e aprovam código conforme.
-bash scripts/tests/test-quality-gates.sh
+bash scripts/harness-tests/quality-gates.sh
+
+# Sem Maven/Docker, em cópia temporária: check de agentes, stubs .claude/skills e hook do Claude.
+bash scripts/harness-tests/agent-config.sh
+
+# Repositório Git temporário: mensagens de commit, coautoria, --range e hooks instalados.
+bash scripts/harness-tests/git-hooks.sh
 ```
 
-A primeira verificação cobre ausência de suítes, falhas Maven/Docker, XML ausente/obsoleto, zero testes, testes ignorados, resumo e interrupção de etapas. A segunda verifica Surefire com Docker inacessível, Mockito inline sem attach dinâmico, Failsafe com PostgreSQL sem repetir unitários e uma falha deliberada de IT que deve retornar erro em `verify`. Essa falha esperada só existe na cópia e o script retorna sucesso apenas se ela for rejeitada.
+A primeira verificação simula `agents/check-config.sh`, que tem teste próprio (a quarta verificação), e cobre ausência de suítes, falhas Maven/Docker, XML ausente/obsoleto, zero testes, testes ignorados, resumo e interrupção de etapas. A segunda verifica Surefire com Docker inacessível, Mockito inline sem attach dinâmico, Failsafe com PostgreSQL sem repetir unitários e uma falha deliberada de IT que deve retornar erro em `verify`. Essa falha esperada só existe na cópia e o script retorna sucesso apenas se ela for rejeitada.
 
 A terceira verificação cria classes de exemplo apenas na cópia e exige que cada gate rejeite violações e aprove código conforme (ver [Quality gates](#quality-gates)).
 
-Fixtures e logs ficam em diretórios únicos sob `target/`, inclusive com espaços nos nomes; `build.sh`/`verify.sh` executam `clean` e os removem. As verificações auxiliares não integram o fluxo padrão e não substituem testes de produto. Para preservar logs do harness completo, use `set -o pipefail` antes de `bash scripts/verify.sh | tee <caminho-fora-de-target>`.
+Fixtures e logs ficam em diretórios únicos sob `target/`, inclusive com espaços nos nomes; `build/compile.sh`/`verify.sh` executam `clean` e os removem. As verificações auxiliares não integram o fluxo padrão e não substituem testes de produto. Para preservar logs do harness completo, use `set -o pipefail` antes de `bash scripts/verify.sh | tee <caminho-fora-de-target>`.
 
 ## Quality gates
 
 | Gate | Versão | Meta | Script | Relatórios |
 |---|---|---|---|---|
-| ArchUnit | 1.5.1 (suporta class files Java 27, major 71) | Nenhuma violação | `test-architecture.sh` | `target/architecture-reports/` |
-| JaCoCo | 0.8.16 | LINE ≥ 90% e BRANCH ≥ 90% | `test-coverage.sh` | `target/site/jacoco/index.html` e `jacoco.xml` |
-| PIT | 1.30.1, com pitest-junit5-plugin 1.2.3 | Mutation score ≥ 90% | `test-mutation.sh` | `target/pit-reports/index.html` e `mutations.xml` |
+| ArchUnit | 1.5.1 (suporta class files Java 27, major 71) | Nenhuma violação | `test/architecture.sh` | `target/architecture-reports/` |
+| JaCoCo | 0.8.16 | LINE ≥ 90% e BRANCH ≥ 90% | `quality/coverage.sh` | `target/site/jacoco/index.html` e `jacoco.xml` |
+| PIT | 1.30.1, com pitest-junit5-plugin 1.2.3 | Mutation score ≥ 90% | `quality/mutation.sh` | `target/pit-reports/index.html` e `mutations.xml` |
 
 As versões são declaradas no `pom.xml`, porque o parent Spring Boot 4.1.2 não as gerencia. O pitest-junit5-plugin usa o `junit-platform-launcher` do projeto (6.0.3, gerenciado pelo BOM), adicionado como dependência de teste.
 
@@ -121,7 +127,7 @@ Todos os scripts retornam `0` PASS, `3` SKIP e `1` FAIL, e imprimem os valores m
 ### Fluxo rápido e execução explícita
 
 - `verify.sh` inclui arquitetura e cobertura. Mesmo com todas as etapas em PASS, informa PARCIAL para os quality gates completos, porque a mutação fica NOT RUN.
-- `test-mutation.sh` é explícito porque executa a suíte unitária uma vez por mutante. Quality gates completos: `bash scripts/verify.sh && bash scripts/test-mutation.sh`.
+- `quality/mutation.sh` é explícito porque executa a suíte unitária uma vez por mutante. Quality gates completos: `bash scripts/verify.sh && bash scripts/quality/mutation.sh`.
 
 ### ArchUnit
 
@@ -134,18 +140,19 @@ As regras estão em `src/test/java/io/github/wesleyosantos91/catalog/architectur
 | `domain` não depende de `api`, `persistence`, `messaging` nem `client` | Restrições de domínio | `feature.*.domain` |
 | `api` não depende de `persistence` | Controllers não acessam repositories | `feature.*.api` |
 | `api` não usa JDBC/SQL | Controllers não executam SQL | `feature.*.api` |
+| `api` não depende de `domain` | `api` depende somente de `service` (dependency-rules, ADR-0003) | `feature.*.api` |
 | Producers não dependem de `api` nem de `service` | Integrações | `feature.*.messaging..producer` |
 | Nenhuma classe usa JPA (`jakarta.persistence`, Spring Data JPA, Hibernate) | ADR-0001; AGENTS.md | Todo o código de produção |
 | Features livres de ciclos | Comunicação entre features | Ao menos duas features |
 | Packages internos de cada feature livres de ciclos | "Dependências cíclicas não são permitidas" | Feature com ao menos dois packages internos |
 | Feature não acessa a `persistence` de outra | Comunicação entre features | Duas features e alguma `persistence` |
 
-Uma regra sem classes elegíveis é marcada como ignorada (assumption) e torna o resultado SKIP. No scaffold atual, só a regra de JPA executa (sobre `JavaAiEngineeringLabApplication`); as outras nove são SKIP. A direção `api → domain` não está listada em "Dependências permitidas" nem proibida em "Restrições"; por isso não há regra para ela, e o caso aguarda decisão.
+Uma regra sem classes elegíveis é ignorada com o marcador `[N/A]` na premissa e reportada como **não aplicável**: não conta como SKIP e aparece no resumo (`N/A=n`). A arquitetura é PASS quando nenhuma regra aplicável falha e ao menos uma executa; se todas forem N/A, é SKIP ([ADR-0003](../architecture/adr/0003-test-suites-and-quality-gates.md)). Com a FEAT-0001, 8 regras executam e passam. As 3 N/A dependem de duas features (ciclos entre features e acesso à `persistence` de outra) ou de código de mensageria (producers).
 
 ### JaCoCo
 
 - Agents em `prepare-agent` (unitários → `target/jacoco-unit.exec`) e `prepare-agent-integration` (integração → `target/jacoco-it.exec`), com `append=false`. A execução de arquitetura não usa o agent, para não sobrescrever os dados unitários.
-- `test-coverage.sh` não executa testes. Ele executa `jacoco:merge@coverage-merge`, `jacoco:report@coverage-report` e `jacoco:check@coverage-check` sobre os dados existentes. Execute-o depois das suítes, como faz o `verify.sh`.
+- `quality/coverage.sh` não executa testes. Ele executa `jacoco:merge@coverage-merge`, `jacoco:report@coverage-report` e `jacoco:check@coverage-check` sobre os dados existentes. Execute-o depois das suítes, como faz o `verify.sh`.
 - **Exclusão única:** `JavaAiEngineeringLabApplication`, o bootstrap Spring Boot sem regra de negócio. Ela é declarada no relatório, no check e no script.
 - SKIP: não há código elegível em `src/main/java`, nenhuma linha foi medida, ou não há branches elegíveis (a meta BRANCH não pode ser comprovada). FAIL: há código elegível sem `.exec`, o relatório está ausente ou o `jacoco:check` rejeitou o limite.
 
@@ -157,7 +164,7 @@ Uma regra sem classes elegíveis é marcada como ignorada (assumption) e torna o
 
 ### Validação negativa
 
-`scripts/tests/test-quality-gates.sh` comprovou, na revisão desta etapa:
+`scripts/harness-tests/quality-gates.sh` comprovou, na revisão desta etapa:
 
 | Cenário na cópia isolada | Resultado esperado e observado |
 |---|---|
@@ -167,12 +174,45 @@ Uma regra sem classes elegíveis é marcada como ignorada (assumption) e torna o
 | Testes de limites e de ambos os ramos, com mock de classe final | Cobertura PASS (100% e 100%); mutação PASS (8 de 8) |
 | JVM de testes unitários | Agents JaCoCo e Mockito carregados simultaneamente |
 
+## Performance
+
+Smoke de disponibilidade com [k6](https://grafana.com/docs/k6/latest/), em execução explícita, fora do `verify.sh`. Ele exige a aplicação já em execução:
+
+```bash
+# Terminal 1: aplicação com PostgreSQL via Testcontainers (exige Docker).
+bash ./mvnw spring-boot:test-run
+
+# Terminal 2: smoke contra http://localhost:8080 (BASE_URL e DURATION opcionais).
+bash scripts/performance/smoke.sh
+BASE_URL=http://localhost:9090 DURATION=30s bash scripts/performance/smoke.sh
+```
+
+| Resultado | Condição |
+|---|---|
+| PASS (`0`) | Todas as requisições a `/actuator/health` retornaram 200 com `status` `UP`; resumo em `target/performance/smoke-summary.json` |
+| FAIL (`1`) | k6 ou curl ausente, aplicação inacessível (smoke NOT RUN), threshold violado ou resumo ausente |
+
+O cenário `performance/k6/smoke.js` usa 1 VU e só thresholds de disponibilidade (`http_req_failed` = 0 e `checks` = 100%). Latências e vazão impressas pelo k6 são informativas: o [PRD](../product/prd.md) só admite metas de desempenho definidas por protocolo reproduzível. Cenários de load e stress serão criados com a primeira feature com endpoint ([skill performance-optimization](../../.agents/skills/performance-optimization/SKILL.md)).
+
+Encerre a aplicação com `Ctrl+C` no terminal em que ela foi iniciada. No Windows, matar apenas o processo `bash`/`mvnw` deixa a JVM filha escutando na porta 8080 ([LL-0006](../ai/lessons-learned.md#ll-0006--no-windows-encerrar-o-mvnw-não-encerra-a-jvm-da-aplicação)).
+
+## Segredos e commits
+
+```bash
+bash scripts/security/scan-secrets.sh            # histórico Git e árvore de trabalho
+bash scripts/security/scan-secrets.sh --staged   # só o diff preparado (usado pelo pre-commit)
+bash scripts/git/check-commit-msg.sh --range develop..HEAD
+bash scripts/git/install-hooks.sh                # commit-msg e pre-commit; --uninstall, --status
+```
+
+A varredura usa o [gitleaks](https://github.com/gitleaks/gitleaks) local ou, na falta dele, a imagem oficial `ghcr.io/gitleaks/gitleaks:v8.30.1` fixada por digest, via Docker. Usa as regras padrão e o `.gitleaks.toml`, que ignora apenas `target/` e `.idea/`. Os valores encontrados são ocultados na saída (`--redact`). Resultados: `0` PASS, `3` SKIP (sem gitleaks e sem Docker), `1` FAIL (achado ou erro). Um segredo exposto deve ser revogado; removê-lo do histórico não basta.
+
 ## Diagnóstico
 
-- **Docker indisponível:** execute `bash scripts/setup.sh`, ative Docker Desktop e repita integração. Não omita a etapa silenciosamente.
+- **Docker indisponível:** execute `bash scripts/setup.sh`, ative Docker Desktop e repita integração. Não omita a etapa silenciosamente. No Windows, `docker` no PATH não garante daemon ativo: se `docker info` mostrar o cliente mas falhar em `npipe:////./pipe/dockerDesktopLinuxEngine`, o Docker Desktop está parado ([LL-0002](../ai/lessons-learned.md#ll-0002--docker-desktop-parado-aparece-como-fail-da-integração)).
 - **Classe elegível sem testes:** confira os métodos JUnit e a convenção; Maven deve falhar, em vez de produzir falso PASS.
 - **HTTP 401 em resolução de metadados:** verifique repositórios e credenciais do ambiente Maven. Avisos foram observados nesta execução, mas não impediram os artefatos utilizados; não adicionar credenciais ao projeto.
-- **Cobertura FAIL sem dados:** execute `bash scripts/verify.sh`; `test-coverage.sh` isolado depende dos `.exec` da execução atual.
+- **Cobertura FAIL sem dados:** execute `bash scripts/verify.sh`; `quality/coverage.sh` isolado depende dos `.exec` da execução atual.
 - **Mutação lenta ou com timeout:** consulte `target/pit-reports/index.html`; não reduza o threshold nem amplie exclusões.
 - **ArchUnit SKIP:** confira em `target/architecture-reports/` quais regras foram ignoradas por ausência de classes elegíveis.
 - **Flyway sem migrações:** o baseline ainda não contém migrações de negócio; o aviso foi preservado e não comprova cobertura de migrações futuras.

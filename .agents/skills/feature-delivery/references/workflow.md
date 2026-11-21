@@ -64,11 +64,11 @@ Inspecione o conteúdo real dos scripts e a configuração atual antes de afirma
 | Script existente | Responsabilidade atual |
 |---|---|
 | [setup.sh](../../../../scripts/setup.sh) | Inspecionar Java, Maven Wrapper e disponibilidade do Docker |
-| [build.sh](../../../../scripts/build.sh) | Compilar com Maven Wrapper |
-| [test-unit.sh](../../../../scripts/test-unit.sh) | Executar classes elegíveis `*Test.java`; emitir SKIP quando não existirem |
-| [test-integration.sh](../../../../scripts/test-integration.sh) | Executar o teste de contexto atual e `*IT`, exigindo Docker funcional |
+| [build/compile.sh](../../../../scripts/build/compile.sh) | Compilar com Maven Wrapper |
+| [test/unit.sh](../../../../scripts/test/unit.sh) | Executar classes elegíveis `*Test.java`; emitir SKIP quando não existirem |
+| [test/integration.sh](../../../../scripts/test/integration.sh) | Executar o teste de contexto atual e `*IT`, exigindo Docker funcional |
 | [verify.sh](../../../../scripts/verify.sh) | Orquestrar build, unitários elegíveis e integração |
-| [guard-branch.sh](../../../../scripts/guard-branch.sh) | Verificar branch antes de operações Git de entrega autorizadas; não integra o verify nem equivale a proteção remota |
+| [git/guard-branch.sh](../../../../scripts/git/guard-branch.sh) | Verificar branch antes de operações Git de entrega autorizadas; não integra o verify nem equivale a proteção remota |
 
 Para alterações funcionais, em Java, testes, dependências, build ou configuração de execução, execute quando houver autorização e ambiente disponível:
 
@@ -93,7 +93,7 @@ Uma execução parcial não substitui resultados anteriores. Preserve cada **FAI
 
 Utilize `SKIP_INTEGRATION=1 bash scripts/verify.sh` somente nas condições permitidas pelo AGENTS.md: omissão explicitamente autorizada ou justificada e comunicada. Declare resultado **parcial**, com a justificativa e os testes não executados. Essa execução registra SKIP para a integração e não transforma uma integração anteriormente reprovada em aprovada; preserve o FAIL anterior e a obrigação não resolvida. Indisponibilidade do Docker não permite omissão silenciosa.
 
-Investigue falhas antes de declarar prontidão. Inclua no relatório final as falhas ainda não investigadas, seus impactos e as ações pendentes; não as oculte. Não remova ou desabilite testes, reduza limites ou altere contratos apenas para obter aprovação. A [DoD, seção Testes e qualidade](../../../../docs/engineering/definition-of-done.md) define quando a obrigação é atendida e seu efeito sobre a conclusão. JaCoCo e ArchUnit integram o `verify.sh`; PIT exige `bash scripts/test-mutation.sh`. Conforme a [skill quality-gates](../../quality-gates/SKILL.md), SKIP por ausência de código elegível não comprova cobertura, mutação nem conformidade arquitetural.
+Investigue falhas antes de declarar prontidão. Inclua no relatório final as falhas ainda não investigadas, seus impactos e as ações pendentes; não as oculte. Não remova ou desabilite testes, reduza limites ou altere contratos apenas para obter aprovação. A [DoD, seção Testes e qualidade](../../../../docs/engineering/definition-of-done.md) define quando a obrigação é atendida e seu efeito sobre a conclusão. JaCoCo e ArchUnit integram o `verify.sh`; PIT exige `bash scripts/quality/mutation.sh`. Conforme a [skill quality-gates](../../quality-gates/SKILL.md), SKIP por ausência de código elegível não comprova cobertura, mutação nem conformidade arquitetural.
 
 Para alterações exclusivamente documentais, revise links, exemplos, blocos Markdown e o diff completo, inclusive arquivos novos. Execute `git diff --check` e, se existirem alterações preparadas, `git diff --cached --check`. Build e testes Java não são necessários sem justificativa técnica adicional. Informe verificações não executadas; não alegue lint ou checagem automática de links que não existam.
 
@@ -111,7 +111,7 @@ Revise o diff completo e os arquivos novos não rastreados. Confirme ausência d
 
 Prepare um relatório com objetivo realizado, arquivos envolvidos, decisões e justificativas, comandos e resultados reais, documentação atualizada, verificações não executadas e próximos passos. Uma implementação pode estar pronta para revisão sem a feature estar **Concluída**. Não declare critérios obrigatórios atendidos sem evidência. Para exceções, aplique a [política normativa da DoD](../../../../docs/engineering/definition-of-done.md): registre o critério, a justificativa, o risco, as compensações, o plano de resolução ou reavaliação e a decisão humana verificável nos registros ali definidos. Aprovar uma exceção não aprova testes reprovados nem permite conclusão com critério obrigatório pendente.
 
-Não marque **Concluída** sem revisão humana favorável e referência verificável. Não execute commit ou push sem autorização explícita; publicação não é consequência automática do pedido de implementação. Quando uma operação Git de entrega estiver autorizada, execute antes `bash scripts/guard-branch.sh`, confirme branch, escopo e diff preparado e siga as regras de Conventional Commits do AGENTS.md. Merge, rebase destrutivo e force-push também dependem das autorizações aplicáveis.
+Não marque **Concluída** sem revisão humana favorável e referência verificável. Não execute commit ou push sem autorização explícita; publicação não é consequência automática do pedido de implementação. Quando uma operação Git de entrega estiver autorizada, execute antes `bash scripts/git/guard-branch.sh`, confirme branch, escopo e diff preparado e siga as regras de Conventional Commits do AGENTS.md. Merge, rebase destrutivo e force-push também dependem das autorizações aplicáveis.
 
 ## Fase 9 — Transições de estado
 
@@ -121,10 +121,4 @@ Consulte no catálogo quem pode autorizar ou registrar cada transição, suas ev
 
 Um agente pode registrar impedimentos conforme a governança, mas não inventar autorização para aprovar escopo, retomá-lo quando depender de decisão humana, cancelar ou concluir a feature. Se faltar aprovação, preserve o estado compatível e reporte a pendência; não trate passagem de tempo, execução de testes ou publicação no Git como aprovação humana.
 
-## Fase 10 — Experimentação AI-First
-
-Aplique esta fase somente quando a demanda estiver vinculada a um experimento controlado real. Consulte o protocolo existente e autorizado; se faltar definição necessária, registre a pendência antes da execução experimental. Não crie automaticamente protocolos, experimentos ou resultados.
-
-Preserve baseline, revisões de requisitos congelados e critérios de comparação. Registre protocolo, modalidade AI-Assisted ou AI-First, sessão ou execução e revisões Git exatas conforme o catálogo. Respeite branches e worktrees quando realmente definidos pelo protocolo; não presuma isolamento existente.
-
-Registre ferramenta, modelo, versão e ambiente quando disponíveis. Não acesse testes de avaliação ocultos aos agentes, não misture resultados de sessões distintas e não altere critérios para favorecer uma implementação. Diferencie tempo, tokens e custos observados de estimativas e dados indisponíveis; preserve resultados anteriores e reporte falhas e execuções incompletas.
+Antes do relatório final, aplique a [skill lessons-learned](../../lessons-learned/SKILL.md) aos aprendizados não óbvios da entrega e liste as entradas que dependem de decisão humana.

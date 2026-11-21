@@ -37,7 +37,7 @@ description: >-
 
 - Teste migração e repository em `*IT` com PostgreSQL real via Testcontainers, não com banco em memória.
 - Cubra restrições de banco, inclusive concorrência quando o contrato exigir, como o CA-08 de SKU duplicado.
-- Execute `bash scripts/test-integration.sh` ou `bash scripts/verify.sh`; Docker é obrigatório.
+- Execute `bash scripts/test/integration.sh` ou `bash scripts/verify.sh`; Docker é obrigatório.
 
 ## Proibições
 

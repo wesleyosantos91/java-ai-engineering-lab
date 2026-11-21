@@ -45,7 +45,7 @@ As ferramentas estão configuradas no `pom.xml` e no harness ([guia de testes](.
 
 As exclusões deverão ser explícitas e justificadas.
 
-Ausência de código, classes, branches ou mutantes elegíveis resulta em `SKIP` e não satisfaz o gate. A mutação não integra o `verify.sh` e exige execução explícita de `scripts/test-mutation.sh`.
+Ausência de código, classes, branches ou mutantes elegíveis resulta em `SKIP` e não satisfaz o gate. A mutação não integra o `verify.sh` e exige execução explícita de `scripts/quality/mutation.sh`.
 
 Cobertura não substitui testes comportamentais relevantes.
 
@@ -102,7 +102,7 @@ Uma alteração que não cumpra algum critério obrigatório não deverá ser de
 
 Somente o responsável técnico humano pode aprovar uma exceção; o agente pode propô-la e registrar a decisão verificável, sem concedê-la por conta própria. A aprovação de exceção é distinta da revisão humana de conclusão e não reclassifica `FAIL`, `SKIP` ou `NOT RUN` como `PASS`.
 
-Exceções podem tratar condições documentais ou operacionais justificáveis, como o adiamento de uma atividade não obrigatória. Elas não dispensam testes obrigatórios aplicáveis, não autorizam reduzir limites para obter aprovação nem afastam requisitos essenciais do contrato funcional ou sua comprovação. Uma falha que comprometa esses requisitos exige correção; mudanças de contrato seguem seu processo próprio de autorização, sem alterar requisitos congelados de experimentos por meio de exceção.
+Exceções podem tratar condições documentais ou operacionais justificáveis, como o adiamento de uma atividade não obrigatória. Elas não dispensam testes obrigatórios aplicáveis, não autorizam reduzir limites para obter aprovação nem afastam requisitos essenciais do contrato funcional ou sua comprovação. Uma falha que comprometa esses requisitos exige correção; mudanças de contrato seguem seu processo próprio de autorização, nunca por meio de exceção.
 
 Cada exceção deve registrar:
 

@@ -23,6 +23,7 @@ Afirmação sem evidência não é conclusão. Este procedimento operacionaliza 
 4. Classifique cada verificação como PASS, FAIL, SKIP ou NOT RUN.
 5. Relacione cada critério de aceitação ao teste ou evidência que o comprova; marque os não comprovados.
 6. Revise o diff completo, inclusive arquivos novos, e procure alterações inesperadas.
+7. Se a tarefa revelou algo não óbvio (falha de ambiente, correção do usuário, comportamento de ferramenta), aplique a [skill lessons-learned](../lessons-learned/SKILL.md) antes do relatório.
 
 ## Linguagem proibida sem evidência
 
@@ -33,7 +34,7 @@ Afirmação sem evidência não é conclusão. Este procedimento operacionaliza 
 - SKIP e NOT RUN não equivalem a PASS.
 - `SKIP_INTEGRATION=1` produz resultado parcial e precisa de justificativa comunicada.
 - Código de saída zero sem testes elegíveis não prova comportamento.
-- Quality gates em SKIP ou NOT RUN não podem ser declarados aprovados. A mutação não integra o `verify.sh`: para os gates completos, execute também `bash scripts/test-mutation.sh`.
+- Quality gates em SKIP ou NOT RUN não podem ser declarados aprovados. A mutação não integra o `verify.sh`: para os gates completos, execute também `bash scripts/quality/mutation.sh`.
 
 ## Relato final
 

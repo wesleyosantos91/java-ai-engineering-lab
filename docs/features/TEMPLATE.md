@@ -117,7 +117,7 @@ Planeje as verificações e relacione cada critério BDD a um teste ou evidênci
 
 O [harness descrito no AGENTS.md](../../AGENTS.md) é a referência operacional. Para código, build ou configuração de execução, utilize prioritariamente `bash scripts/verify.sh`, que reúne compilação, unitários elegíveis e integração com Docker. O teste de contexto existente não equivale a uma suíte de negócio ou de contrato. `SKIP` por ausência de unitários não significa testes aprovados.
 
-JaCoCo, PIT e ArchUnit são mecanismos futuros no estado atual do harness; não registre cobertura, mutation score ou validação arquitetural automática sem configuração e execução verificáveis. Reavalie esse estado ao usar o template. Não crie comandos fictícios para verificações ainda não implementadas.
+JaCoCo, PIT e ArchUnit estão configurados (`bash scripts/verify.sh` e `bash scripts/quality/mutation.sh`), mas só comprovam algo quando há código elegível; `SKIP` não é aprovação. Não registre cobertura, mutation score ou validação arquitetural sem execução verificável, nem crie comandos fictícios para verificações inexistentes.
 
 Para mudanças exclusivamente documentais, revise links, exemplos e diff e execute `git diff --check`; use `git diff --cached --check` se houver alterações preparadas. Omissões de verificações aplicáveis devem ser justificadas; integração omitida implica resultado parcial conforme AGENTS.md.
 
@@ -168,18 +168,16 @@ Use a [Definition of Done](../engineering/definition-of-done.md) como fonte norm
 - Pull requests: [PREENCHER: links existentes ou ainda não criados].
 - Pendências e riscos: [PREENCHER: descrição, impacto, responsável e próximo passo; ou nenhum identificado].
 
-### Rastreabilidade experimental e participação de IA
+### Participação de IA
 
-Preencha quando houver experimento ou participação de agentes. Se não houver, registre essa condição sem inventar protocolo ou medições.
+Preencha quando agentes de IA participarem da entrega. Se não houver participação, registre essa condição.
 
 | Campo | Registro |
 |---|---|
-| Modalidade | [PREENCHER: AI-Assisted, AI-First ou não aplicável] |
-| Protocolo e execução | [PREENCHER: referência existente, identificação da execução e sessão; ou pendente] |
-| Baseline e contratos congelados | [PREENCHER: commit e revisões exatas de PRD, ADRs e especificação] |
-| Ferramentas, modelos e ambiente | [PREENCHER: versões e dados observados quando disponíveis] |
-| Intervenções humanas | [PREENCHER: decisões, motivo e referências] |
-| Medições e limitações | [PREENCHER: resultados separados por execução; distinguir medições de estimativas e dados indisponíveis] |
+| Agentes e modelos | [PREENCHER: provider, modelo e cliente utilizados, quando disponíveis] |
+| Contratos de referência | [PREENCHER: revisões exatas de PRD, ADRs e especificação usadas pelos agentes] |
+| Intervenções humanas | [PREENCHER: decisões, correções, motivo e referências] |
+| Aprendizados registrados | [PREENCHER: entradas LL-NNNN em docs/ai/lessons-learned.md, ou nenhuma] |
 
 ## 13. Aprovação
 

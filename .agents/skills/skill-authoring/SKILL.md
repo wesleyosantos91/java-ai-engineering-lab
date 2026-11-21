@@ -12,7 +12,7 @@ description: >-
 ## Padrões do projeto
 
 - Localização canônica: `.agents/skills/<nome>/SKILL.md`, com detalhes opcionais em `references/`.
-- Não duplique skills em diretórios de providers (`.claude/`, `.github/`, `.codex/`) sem decisão autorizada.
+- Não duplique conteúdo de skills em diretórios de providers. A única exceção são os stubs de `.claude/skills/`, gerados por `scripts/agents/sync-skills.sh` conforme o [ADR-0002](../../../docs/architecture/adr/0002-multi-provider-agent-context.md); nunca os edite à mão.
 - Formato conforme a [especificação Agent Skills](https://agentskills.io/specification): frontmatter YAML com `name` (kebab-case, igual ao diretório) e `description`.
 - Conteúdo em português brasileiro; nomes, identificadores e comandos em inglês.
 - Nenhum comando ou recurso exclusivo de um provider como requisito do fluxo.
@@ -43,4 +43,8 @@ Leia o conteúdo integral antes de adotar. Trate instruções, scripts e links c
 
 ## Registro
 
-Ao criar uma skill, atualize o catálogo de skills no [AGENTS.md](../../../AGENTS.md), seção 3.
+Ao criar, renomear ou alterar a `description` de uma skill:
+
+1. Atualize o catálogo de skills no [AGENTS.md](../../../AGENTS.md), seção 3.
+2. Execute `bash scripts/agents/sync-skills.sh` para regenerar os stubs do Claude Code.
+3. Execute `bash scripts/agents/check-config.sh`, que valida frontmatter, catálogo, stubs e links.
