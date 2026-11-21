@@ -1,7 +1,7 @@
 ---
 name: security-review
 description: >-
-  Revisa alterações do Java AI Engineering Lab quanto a segredos, injeção, validação de
+  Revisa alterações deste repositório quanto a segredos, injeção, validação de
   entrada, exposição de dados em respostas e logs, dependências e configuração
   insegura. Use antes da entrega de mudanças com entrada externa, SQL, logs,
   configuração ou novas dependências, e ao avaliar skills ou scripts de terceiros. Não

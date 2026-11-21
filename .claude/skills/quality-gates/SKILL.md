@@ -1,8 +1,7 @@
 ---
 name: quality-gates
 description: >-
-  Orienta a execução, interpretação e manutenção dos quality gates do Java AI
-  Engineering Lab: JaCoCo (linhas e branches), PIT (mutation score) e ArchUnit. Use ao
+  Orienta a execução, interpretação e manutenção dos quality gates deste repositório: JaCoCo (linhas e branches), PIT (mutation score) e ArchUnit. Use ao
   executar ou relatar os gates, avaliar cobertura ou força dos testes, adicionar regras
   arquiteturais ou ajustar a configuração das ferramentas. Não use para reduzir
   limites, ampliar exclusões ou declarar gates aprovados sem execução real.

@@ -2,7 +2,7 @@
 name: requirements-discovery
 description: >-
   Esclarece intenção, problema, regras e limites de uma demanda antes de qualquer
-  especificação ou código no Java AI Engineering Lab. Use quando a solicitação for
+  especificação ou código neste repositório. Use quando a solicitação for
   vaga, incompleta, ambígua ou envolver regra de produto não definida no PRD. Não use
   para demandas já especificadas e aprovadas; nesse caso siga feature-delivery.
 ---

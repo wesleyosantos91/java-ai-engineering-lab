@@ -1,8 +1,7 @@
 ---
 name: quality-gates
 description: >-
-  Orienta a execução, interpretação e manutenção dos quality gates do Java AI
-  Engineering Lab: JaCoCo (linhas e branches), PIT (mutation score) e ArchUnit. Use ao
+  Orienta a execução, interpretação e manutenção dos quality gates deste repositório: JaCoCo (linhas e branches), PIT (mutation score) e ArchUnit. Use ao
   executar ou relatar os gates, avaliar cobertura ou força dos testes, adicionar regras
   arquiteturais ou ajustar a configuração das ferramentas. Não use para reduzir
   limites, ampliar exclusões ou declarar gates aprovados sem execução real.
@@ -12,7 +11,7 @@ description: >-
 
 ## Estado atual
 
-Os três gates estão configurados no `pom.xml` e integrados ao harness. Com a FEAT-0001 há código elegível: JaCoCo, PIT e 8 regras ArchUnit executam de fato. As outras 3 regras são **N/A** (não aplicáveis) enquanto não houver duas features ou mensageria. SKIP e N/A não equivalem a aprovação da regra. A capacidade de rejeitar violações foi demonstrada em cópia isolada por `scripts/harness-tests/quality-gates.sh`. Comandos, relatórios e diagnóstico estão no [guia de testes](../../../docs/how-to/run-tests.md#quality-gates).
+Os três gates estão configurados no `pom.xml` e integrados ao harness. Com a FEAT-0001 há código elegível: JaCoCo, PIT e 8 regras ArchUnit executam de fato. As outras 3 regras são **N/A** (não aplicáveis) enquanto não houver duas features ou mensageria. SKIP e N/A não equivalem a aprovação da regra. A capacidade de rejeitar violações foi demonstrada em cópia isolada por `scripts/harness-tests/quality-gates.sh`. Comandos, relatórios e diagnóstico estão no [guia de testes](../../../docs/how-to/run-tests.md#quality-gates). <!-- kit:replace-line: Os três gates estão configurados no `pom.xml` e integrados ao harness. Sem código elegível, eles retornam SKIP; regras ArchUnit sem alvo são N/A. SKIP e N/A não equivalem a aprovação. A capacidade de rejeitar violações é demonstrada em cópia isolada por `scripts/harness-tests/quality-gates.sh`. Comandos, relatórios e diagnóstico estão no [guia de testes](../../../docs/how-to/run-tests.md#quality-gates). -->
 
 | Gate | Meta | Script | Fluxo |
 |---|---|---|---|

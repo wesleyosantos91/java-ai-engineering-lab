@@ -2,7 +2,7 @@
 name: architecture-guard
 description: >-
   Verifica se código novo ou alterado respeita a arquitetura Feature-Based, as
-  convenções de packages e as regras de dependência do Java AI Engineering Lab, e
+  convenções de packages e as regras de dependência deste repositório, e
   identifica quando uma mudança exige decisão arquitetural (ADR). Use ao planejar,
   implementar ou revisar código Java. Não use para aprovar ADRs nem alterar padrões
   aprovados unilateralmente.

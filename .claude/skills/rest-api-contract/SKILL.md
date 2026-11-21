@@ -1,7 +1,7 @@
 ---
 name: rest-api-contract
 description: >-
-  Implementa e revisa endpoints REST do Java AI Engineering Lab em conformidade com o
+  Implementa e revisa endpoints REST deste repositório em conformidade com o
   contrato HTTP do PRD, incluindo rotas versionadas, status, representação JSON,
   paginação e erros ProblemDetail (RFC 9457). Use ao criar ou alterar controller,
   request, response ou tratamento de erros HTTP. Não use para alterar o contrato

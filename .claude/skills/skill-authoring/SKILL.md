@@ -1,7 +1,7 @@
 ---
 name: skill-authoring
 description: >-
-  Cria, revisa e avalia skills de agente do Java AI Engineering Lab no formato aberto
+  Cria, revisa e avalia skills de agente deste repositório no formato aberto
   Agent Skills (SKILL.md), mantendo-as agnósticas de provider de IA e coerentes com o
   AGENTS.md. Use ao criar uma skill, ajustar a description ou o conteúdo de uma skill
   existente, ou avaliar uma skill de terceiros antes de adotá-la.

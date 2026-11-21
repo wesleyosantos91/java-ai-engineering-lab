@@ -2,7 +2,7 @@
 name: tdd-workflow
 description: >-
   Conduz o ciclo Red, Green e Refactor com evidência de cada fase para comportamentos
-  Java do Java AI Engineering Lab. Use ao implementar regra de negócio, critério BDD,
+  Java deste repositório. Use ao implementar regra de negócio, critério BDD,
   correção de defeito ou contrato HTTP. Não use para alterações exclusivamente
   documentais ou de configuração sem comportamento testável.
 ---
